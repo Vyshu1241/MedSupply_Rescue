@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Demo Validation & Scenario Simulator{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 rounded-2xl p-6 text-white shadow-xl border border-indigo-500/30">
+        <div class="flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <i class="fa-solid fa-vial-circle-check"></i> System Validation Center
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight">Interactive Scenario Simulator & Test Suite</h1>
+        <p class="text-slate-300 text-xs mt-1 max-w-2xl">
+            Execute pre-packaged validation scenarios with fictional medicine and facility data to demonstrate batch traceability, smart matching, regulatory approvals, temperature logs, and cryptographic reconciliation.
+        </p>
+    </div>
+
+    <!-- Scenarios Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Scenario 1: Amoxicillin Shortage & Rescue -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4 flex flex-col justify-between hover:border-teal-400 transition">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="bg-teal-50 text-teal-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-teal-200 uppercase font-mono">
+                        Scenario 1
+                    </span>
+                    <span class="text-xs font-bold text-amber-600">
+                        <i class="fa-solid fa-hourglass-half mr-1"></i> 28d to Expiry
+                    </span>
+                </div>
+
+                <h3 class="text-base font-bold text-slate-900">
+                    Pediatric Amoxicillin Expiry Rescue & Shortage Resolution
+                </h3>
+
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    <strong>Problem:</strong> Northside Community Clinic has only 4 bottles left during an outbreak. Wholesaler delivery delayed 14 days.<br>
+                    <strong>Solution:</strong> St. Jude Hospital holds 185 bottles expiring in 28 days with only ~4/day burn rate. Transfer 40 bottles to save stock from expiration waste and resolve shortage.
+                </p>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[11px] space-y-1 text-slate-700">
+                    <div>&bull; <strong class="text-slate-900">Matches:</strong> St. Jude batch AMX-2024-081</div>
+                    <div>&bull; <strong class="text-slate-900">Workflow:</strong> Requested &rarr; Approved &rarr; Dispatched &rarr; Reconciled</div>
+                    <div>&bull; <strong class="text-slate-900">Audit:</strong> 4 cryptographically linked SHA-256 blocks</div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('run_simulation') }}">
+                <input type="hidden" name="action" value="run_amoxicillin_rescue">
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Run End-to-End Simulation
+                </button>
+            </form>
+        </div>
+
+        <!-- Scenario 2: Cold-Chain Insulin Transfer -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4 flex flex-col justify-between hover:border-sky-400 transition">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="bg-sky-50 text-sky-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-sky-200 uppercase font-mono">
+                        Scenario 2
+                    </span>
+                    <span class="text-xs font-bold text-sky-600">
+                        <i class="fa-solid fa-snowflake mr-1"></i> Cold Chain (2-8°C)
+                    </span>
+                </div>
+
+                <h3 class="text-base font-bold text-slate-900">
+                    Refrigerated Insulin Glargine Cold-Chain Transfer
+                </h3>
+
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    <strong>Challenge:</strong> Insulin Glargine requires strict continuous 2-8°C refrigeration. Transferring between non-certified facilities violates health regulations.<br>
+                    <strong>Execution:</strong> St. Jude transfers 20 boxes to Sunrise Urgent Care. Validates cold-chain facility certification and records departure (3.8°C) and arrival (4.1°C) temperatures.
+                </p>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[11px] space-y-1 text-slate-700">
+                    <div>&bull; <strong class="text-slate-900">Batch:</strong> INS-2024-114 (92 units in stock)</div>
+                    <div>&bull; <strong class="text-slate-900">Courier:</strong> PolarTemp Biocourier with TempTale logger</div>
+                    <div>&bull; <strong class="text-slate-900">Compliance:</strong> 100% Cold Chain Certified</div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('run_simulation') }}">
+                <input type="hidden" name="action" value="run_cold_chain_insulin">
+                <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-temperature-arrow-down"></i> Run Cold-Chain Simulation
+                </button>
+            </form>
+        </div>
+
+        <!-- Scenario 3: Clean Reset Data -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4 flex flex-col justify-between hover:border-slate-400 transition">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase font-mono">
+                        Maintenance
+                    </span>
+                    <span class="text-xs font-bold text-slate-500">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Baseline Seed
+                    </span>
+                </div>
+
+                <h3 class="text-base font-bold text-slate-900">
+                    Reset & Re-seed Demonstration Network
+                </h3>
+
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Resets all SQLite tables to the standard initial state with 5 facilities, 6 role-based user personas, 8 essential medicine classes, 18 realistic batches, and 30 days of consumption history for forecasting.
+                </p>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[11px] space-y-1 text-slate-700">
+                    <div>&bull; <strong class="text-slate-900">5 Facilities:</strong> Hospital, Clinic, Rural Dispensary, Urgent Care, Hub</div>
+                    <div>&bull; <strong class="text-slate-900">Initial State:</strong> 1 active shortage, 2 near-expiry warnings</div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('run_simulation') }}">
+                <input type="hidden" name="action" value="reset">
+                <button type="submit" onclick="return confirm('Are you sure you want to reset demo data?');" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-trash-arrow-up"></i> Reset Demo Database
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Solution Validation Matrix (Directly mapping to Challenge Requirements) -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-teal-600"></i> Challenge Specification Validation Matrix
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-1">
+                <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i> Facility & Role-Based Access
+                </div>
+                <p class="text-emerald-800">
+                    Clinic Staff, Inventory Managers, Authorized Approvers, and Platform Admins with fast 1-click header switcher.
+                </p>
+            </div>
+
+            <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-1">
+                <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i> Medicine & Batch Provenance
+                </div>
+                <p class="text-emerald-800">
+                    Generic/brand names, strengths, NDC codes, lot numbers, cold-chain vs ambient tags, shelf-life countdown.
+                </p>
+            </div>
+
+            <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-1">
+                <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i> Intelligent Shortage Matching
+                </div>
+                <p class="text-emerald-800">
+                    Matches shortage demand against donor facilities, prioritizing near-expiry surplus to eliminate medication waste.
+                </p>
+            </div>
+
+            <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-1">
+                <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i> Chain-of-Custody State Machine
+                </div>
+                <p class="text-emerald-800">
+                    Request &rarr; Digital Approval &rarr; Courier Dispatch & Temperature Log &rarr; Receipt & Reconciliation.
+                </p>
+            </div>
+
+            <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-1">
+                <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i> Advanced Forecasting & Redistribution
+                </div>
+                <p class="text-emerald-800">
+                    Days of Supply (DOS) vs Lead Time prediction, expiry waste detection, and proactive redistribution proposals.
+                </p>
+            </div>
+
+            <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-1">
+                <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i> Immutable-Style Audit Ledger
+                </div>
+                <p class="text-emerald-800">
+                    Cryptographic SHA-256 block chain linking all state transitions, verifiable on demand.
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

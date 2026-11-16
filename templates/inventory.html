@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Batch Inventory{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Action Bar -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-boxes-stacked text-teal-600"></i> Batch-Level Medicine Inventory
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">
+                Multi-facility traceability: track lot numbers, remaining shelf-life, cold chain compliance, and available surplus.
+            </p>
+        </div>
+
+        <button onclick="document.getElementById('addBatchModal').classList.remove('hidden')" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Register New Batch
+        </button>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <form method="GET" action="{{ url_for('inventory') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <!-- Facility Filter -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Facility</label>
+                <select name="facility_id" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-teal-500">
+                    <option value="0">All Facilities (System View)</option>
+                    {% for f in facilities %}
+                        <option value="{{ f.id }}" {% if selected_fac == f.id %}selected{% endif %}>{{ f.name }} ({{ f.city }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Therapeutic Category -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Category</label>
+                <select name="category" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-teal-500">
+                    <option value="">All Therapeutic Classes</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if selected_cat == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Storage Requirement -->
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Storage Condition</label>
+                <select name="storage_req" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-teal-500">
+                    <option value="">All Storage Types</option>
+                    <option value="Cold Chain" {% if selected_storage == 'Cold Chain' %}selected{% endif %}>❄️ Cold Chain (2-8°C)</option>
+                    <option value="Room Temperature" {% if selected_storage == 'Room Temperature' %}selected{% endif %}>🌡️ Room Temperature (15-25°C)</option>
+                </select>
+            </div>
+
+            <!-- Submit Filter Button -->
+            <div class="flex items-end gap-2">
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs py-2 px-3 rounded-lg transition">
+                    <i class="fa-solid fa-filter mr-1"></i> Apply Filters
+                </button>
+                <a href="{{ url_for('inventory') }}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs py-2 px-3 rounded-lg transition">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Inventory Batches Table -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Medicine & Form</th>
+                        <th class="py-3 px-4">Facility & Storage Location</th>
+                        <th class="py-3 px-4">Batch Number</th>
+                        <th class="py-3 px-4">Stock Breakdown</th>
+                        <th class="py-3 px-4">Expiry Date & Shelf-Life</th>
+                        <th class="py-3 px-4">Storage Compliance</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for b in batches %}
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <!-- Medicine -->
+                            <td class="py-3 px-4">
+                                <div class="font-bold text-slate-900 text-xs">{{ b.generic_name }}</div>
+                                <div class="text-[11px] text-slate-500">{{ b.brand_name or '' }} &bull; {{ b.strength }} &bull; {{ b.dosage_form }}</div>
+                                <span class="inline-block mt-0.5 text-[9px] font-mono px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">{{ b.ndc_or_code }}</span>
+                            </td>
+
+                            <!-- Facility & Location -->
+                            <td class="py-3 px-4">
+                                <div class="font-semibold text-slate-800">{{ b.facility_name }}</div>
+                                <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-[10px] text-teal-600"></i> {{ b.storage_location }}
+                                </div>
+                            </td>
+
+                            <!-- Batch Number -->
+                            <td class="py-3 px-4 font-mono font-bold text-slate-800">
+                                {{ b.batch_number }}
+                            </td>
+
+                            <!-- Stock Breakdown -->
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                                    <span>{{ b.available_quantity }}</span>
+                                    <span class="text-slate-500 font-normal">{{ b.unit_of_measure }}</span>
+                                </div>
+                                {% if b.reserved_quantity > 0 %}
+                                    <div class="text-[10px] text-amber-600 font-medium">
+                                        ({{ b.reserved_quantity }} reserved in transfer)
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Expiry Countdown -->
+                            <td class="py-3 px-4">
+                                <div class="font-semibold text-slate-800">{{ b.expiry_date }}</div>
+                                <span class="inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ b.expiry_badge_class }}">
+                                    {{ b.expiry_status }} ({{ b.days_to_expiry }}d)
+                                </span>
+                            </td>
+
+                            <!-- Storage Requirement -->
+                            <td class="py-3 px-4">
+                                {% if 'Cold Chain' in b.storage_requirement or '2-8°C' in b.storage_requirement %}
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                                        <i class="fa-solid fa-snowflake text-[9px]"></i> Cold Chain (2-8°C)
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                                        <i class="fa-solid fa-temperature-half text-[9px]"></i> Room Temp (15-25°C)
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="py-3 px-4 text-right">
+                                {% if b.days_to_expiry <= 60 and b.available_quantity > 0 %}
+                                    <a href="{{ url_for('forecasting') }}" class="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-[10px] px-2 py-1 rounded shadow-sm transition">
+                                        <i class="fa-solid fa-share-nodes"></i> Rescue Stock
+                                    </a>
+                                {% else %}
+                                    <span class="text-slate-400 text-[11px]">In Stock</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-slate-400">No batches match the selected criteria.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Register Batch Modal -->
+<div id="addBatchModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-box-archive text-teal-600"></i> Register New Medicine Batch
+            </h3>
+            <button onclick="document.getElementById('addBatchModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="{{ url_for('add_new_batch') }}" class="mt-4 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Receiving Facility</label>
+                <select name="facility_id" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                    {% for f in facilities %}
+                        <option value="{{ f.id }}">{{ f.name }} ({{ f.city }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Medicine</label>
+                <select name="medicine_id" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                    {% for m in medicines %}
+                        <option value="{{ m.id }}">{{ m.generic_name }} ({{ m.strength }}) - [{{ m.storage_requirement }}]</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Batch / Lot Number</label>
+                    <input type="text" name="batch_number" required placeholder="e.g. AMX-2024-991" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Quantity Received</label>
+                    <input type="number" name="quantity" required min="1" placeholder="e.g. 100" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Expiry Date</label>
+                    <input type="date" name="expiry_date" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Manufacture Date (Opt)</label>
+                    <input type="date" name="manufacture_date" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Storage Location (Cabinet/Shelf/Fridge)</label>
+                <input type="text" name="storage_location" required placeholder="e.g. Main Cold Storage Refrigerator #1 [3.8°C]" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('addBatchModal').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm">
+                    Register Batch
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

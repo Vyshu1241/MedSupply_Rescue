@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Shortage Coordination & Smart Match{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Action -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Medicine Shortage Requests & Discovery
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">
+                Log critical clinic stock deficits, evaluate urgency, and match against facilities holding eligible or expiring stock.
+            </p>
+        </div>
+
+        <button onclick="document.getElementById('reportShortageModal').classList.remove('hidden')" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2">
+            <i class="fa-solid fa-plus-circle"></i> Report Clinic Shortage
+        </button>
+    </div>
+
+    <!-- Active Match Results Drawer (If a match is selected) -->
+    {% if active_match %}
+        <div class="bg-gradient-to-r from-teal-950 via-slate-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl border border-teal-500/30">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
+                <div>
+                    <div class="flex items-center gap-2 text-teal-400 text-xs font-semibold uppercase tracking-wider">
+                        <i class="fa-solid fa-bolt"></i> Smart Match Discovery Engine
+                    </div>
+                    <h2 class="text-lg font-bold text-white mt-1">
+                        Candidate Donor Facilities for {{ active_match.request_code }}
+                    </h2>
+                    <p class="text-xs text-slate-300">
+                        Target Demand: <span class="text-teal-300 font-bold">{{ active_match.required_quantity }} units</span> &bull; Urgency: <span class="text-rose-400 font-bold">{{ active_match.urgency }}</span>
+                    </p>
+                </div>
+                <a href="{{ url_for('shortages') }}" class="text-xs text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                    <i class="fa-solid fa-xmark mr-1"></i> Close Match View
+                </a>
+            </div>
+
+            <!-- Matches List -->
+            <div class="mt-4 space-y-3">
+                {% for m in match_candidates %}
+                    <div class="bg-slate-800/90 rounded-xl p-4 border {% if m.eligible %}border-teal-500/50{% else %}border-rose-500/50 opacity-60{% endif %} flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div class="space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold text-white">{{ m.facility_name }}</span>
+                                <span class="text-[11px] text-slate-400">({{ m.facility_location }})</span>
+                                {% if m.has_cold_chain %}
+                                    <span class="bg-sky-950 text-sky-400 text-[10px] font-semibold px-1.5 py-0.2 rounded border border-sky-800">
+                                        <i class="fa-solid fa-snowflake text-[9px]"></i> Cold Chain
+                                    </span>
+                                {% endif %}
+                                <span class="bg-teal-950 text-teal-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-teal-800">
+                                    {{ m.match_score }}% Match
+                                </span>
+                            </div>
+
+                            <p class="text-xs text-slate-300">
+                                Batch: <span class="font-mono text-teal-300 font-semibold">{{ m.batch_number }}</span> &bull; 
+                                Available: <strong class="text-white">{{ m.available_quantity }} units</strong> &bull; 
+                                Expiry: <strong class="text-amber-300">{{ m.expiry_date }} ({{ m.days_to_expiry }}d left)</strong>
+                            </p>
+
+                            <p class="text-xs text-slate-400 italic">
+                                <i class="fa-solid fa-circle-info text-teal-400 mr-1"></i> {{ m.recommendation_note }}
+                            </p>
+
+                            <div class="flex flex-wrap gap-1.5 pt-1">
+                                {% for tag in m.match_tags %}
+                                    <span class="text-[10px] bg-slate-900/80 text-teal-300 px-2 py-0.5 rounded border border-slate-700">
+                                        {{ tag }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Initiate Transfer Action -->
+                        {% if m.eligible %}
+                            <form method="POST" action="{{ url_for('create_transfer') }}" class="shrink-0 flex items-center gap-2">
+                                <input type="hidden" name="shortage_id" value="{{ active_match.id }}">
+                                <input type="hidden" name="batch_id" value="{{ m.batch_id }}">
+                                <input type="hidden" name="source_facility_id" value="{{ m.facility_id }}">
+                                <input type="hidden" name="dest_facility_id" value="{{ active_match.requesting_facility_id }}">
+                                <input type="hidden" name="medicine_id" value="{{ active_match.medicine_id }}">
+                                <input type="hidden" name="quantity" value="{{ m.transferrable_quantity }}">
+
+                                <button type="submit" class="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-lg shadow-lg transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-right-left"></i> Initiate Transfer ({{ m.transferrable_quantity }} units)
+                                </button>
+                            </form>
+                        {% else %}
+                            <div class="text-rose-400 text-xs font-semibold">
+                                <i class="fa-solid fa-ban mr-1"></i> {{ m.disqualification_reason }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-xs text-slate-400 py-4 text-center">No matching batches found at other facilities for this medicine.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- All Shortage Requests Table -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Request Code</th>
+                        <th class="py-3 px-4">Requesting Clinic</th>
+                        <th class="py-3 px-4">Medicine & Demand</th>
+                        <th class="py-3 px-4">Urgency & Timeline</th>
+                        <th class="py-3 px-4">Clinical Justification</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for s in shortage_list %}
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="py-3 px-4 font-mono font-bold text-slate-800">
+                                {{ s.request_code }}
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="font-semibold text-slate-800">{{ s.facility_name }}</div>
+                                <div class="text-[11px] text-slate-500">{{ s.city }} &bull; By {{ s.requester_name }}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="font-bold text-slate-900">{{ s.generic_name }}</div>
+                                <div class="text-[11px] text-slate-500">{{ s.strength }} &bull; Need: <strong class="text-rose-600">{{ s.required_quantity }} {{ s.unit_of_measure }}</strong></div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div>
+                                    {% if s.urgency == 'CRITICAL' %}
+                                        <span class="inline-flex items-center gap-1 bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200">
+                                            <i class="fa-solid fa-circle-exclamation text-[9px]"></i> CRITICAL (&lt;24h)
+                                        </span>
+                                    {% elif s.urgency == 'HIGH' %}
+                                        <span class="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-200">
+                                            HIGH (&lt;72h)
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                            {{ s.urgency }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-[11px] text-slate-500 mt-1">Needed by: {{ s.needed_by_date }}</div>
+                            </td>
+                            <td class="py-3 px-4 max-w-xs text-slate-600 text-[11px] leading-relaxed">
+                                {{ s.clinical_justification }}
+                            </td>
+                            <td class="py-3 px-4">
+                                {% if s.status == 'OPEN' %}
+                                    <span class="bg-rose-50 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200">OPEN</span>
+                                {% elif s.status == 'MATCHED' %}
+                                    <span class="bg-teal-50 text-teal-700 text-[10px] font-bold px-2 py-0.5 rounded border border-teal-200">MATCHED</span>
+                                {% elif s.status == 'IN_TRANSFER' %}
+                                    <span class="bg-purple-50 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-200">IN TRANSFER</span>
+                                {% elif s.status == 'FULFILLED' %}
+                                    <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-200">FULFILLED</span>
+                                {% else %}
+                                    <span class="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded">{{ s.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                {% if s.status in ('OPEN', 'MATCHED') %}
+                                    <a href="{{ url_for('shortages', match_id=s.id) }}" class="inline-flex items-center gap-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[11px] px-3 py-1.5 rounded-lg shadow-sm transition">
+                                        <i class="fa-solid fa-bolt text-[10px]"></i> Smart Match
+                                    </a>
+                                {% else %}
+                                    <span class="text-slate-400 text-[11px]">Fulfilled</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-slate-400">No shortages reported.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Report Shortage Modal -->
+<div id="reportShortageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Report Facility Medicine Shortage
+            </h3>
+            <button onclick="document.getElementById('reportShortageModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="{{ url_for('shortages') }}" class="mt-4 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Requesting Facility</label>
+                <select name="facility_id" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                    {% for f in facilities %}
+                        <option value="{{ f.id }}" {% if g.user and g.user.facility_id == f.id %}selected{% endif %}>{{ f.name }} ({{ f.city }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Medicine Needed</label>
+                <select name="medicine_id" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                    {% for m in medicines %}
+                        <option value="{{ m.id }}">{{ m.generic_name }} ({{ m.strength }}) - {{ m.dosage_form }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Required Quantity</label>
+                    <input type="number" name="quantity" required min="1" placeholder="e.g. 40" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Needed By Date</label>
+                    <input type="date" name="needed_by_date" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Urgency Level</label>
+                <select name="urgency" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                    <option value="CRITICAL">CRITICAL: Active stockout / &lt;24 hours supply</option>
+                    <option value="HIGH">HIGH: Projected stockout in &lt;72 hours</option>
+                    <option value="MEDIUM">MEDIUM: Stock below safety threshold (&lt;7 days)</option>
+                    <option value="LOW">LOW: Routine replenishment buffer</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Clinical Justification & Wholesaler Delay Reason</label>
+                <textarea name="clinical_justification" required rows="3" placeholder="e.g. Outbreak of pediatric pharyngitis. Current stock depleted. Primary commercial supplier delivery delayed 14 days." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('reportShortageModal').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm">
+                    Submit Shortage
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

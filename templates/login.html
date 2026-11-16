@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - MedSupply Rescue{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8">
+
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white text-2xl shadow-lg shadow-teal-500/25 mb-3">
+            <i class="fa-solid fa-truck-medical"></i>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900">MedSupply Rescue Coordination Portal</h1>
+        <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+            Authorized multi-facility platform for stock visibility, shortage resolution, and lawful medicine redistribution.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
+        <!-- Left: Standard Sign-In Form -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-slate-900 mb-1">Account Sign In</h2>
+            <p class="text-xs text-slate-500 mb-4">Enter credentials or use the instant demo roles on the right.</p>
+
+            <form method="POST" action="{{ url_for('login') }}" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Username</label>
+                    <input type="text" name="username" required placeholder="e.g. northside_staff" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-1 focus:ring-teal-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Password</label>
+                    <input type="password" name="password" required placeholder="Default: Rescue2026!" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:ring-1 focus:ring-teal-500">
+                </div>
+
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-lg shadow transition">
+                    Sign In to Facility Portal
+                </button>
+            </form>
+
+            <div class="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+                New healthcare facility? 
+                <a href="{{ url_for('register') }}" class="text-teal-600 font-bold hover:underline">Register Facility & Staff</a>
+            </div>
+        </div>
+
+        <!-- Right: 1-Click Persona Evaluation Switcher -->
+        <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-lg border border-slate-800 space-y-4">
+            <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider text-teal-400 bg-teal-950 px-2 py-0.5 rounded border border-teal-800">
+                    Evaluation & Testing
+                </span>
+                <h2 class="text-sm font-bold text-white mt-1">1-Click Role-Based Quick Sign-In</h2>
+                <p class="text-xs text-slate-400">Select any authorized role to test permissions and specific workflows:</p>
+            </div>
+
+            <div class="space-y-2.5">
+                {% for u in demo_users %}
+                    <a href="{{ url_for('quick_login', user_id=u.id) }}" class="block p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-teal-500 transition group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center text-xs font-bold">
+                                    {% if u.role == 'platform_admin' %}<i class="fa-solid fa-crown"></i>
+                                    {% elif u.role == 'approver' %}<i class="fa-solid fa-stamp"></i>
+                                    {% elif u.role == 'facility_manager' %}<i class="fa-solid fa-warehouse"></i>
+                                    {% else %}<i class="fa-solid fa-user-doctor"></i>{% endif %}
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-white group-hover:text-teal-300 transition">{{ u.full_name }}</div>
+                                    <div class="text-[10px] text-slate-400">{{ u.facility_name or 'Regional Authority Hub' }}</div>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700">
+                                {{ u.role }}
+                            </span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+
+            <div class="text-[11px] text-slate-400 pt-2 border-t border-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-key text-teal-400"></i> Standard password for all demo accounts: <code class="text-teal-300 font-mono">Rescue2026!</code>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

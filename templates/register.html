@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Healthcare Facility & Staff{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6">
+
+    <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold text-slate-900">Healthcare Facility & Staff Registration</h1>
+        <p class="text-xs text-slate-500 mt-1">
+            Enroll a clinic, pharmacy, or hospital into the MedSupply Rescue Coordination Network with role-based credentials.
+        </p>
+    </div>
+
+    <form method="POST" action="{{ url_for('register') }}" class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-xs">
+
+        <!-- Section 1: Facility Information -->
+        <div class="space-y-4">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
+                <i class="fa-solid fa-hospital text-teal-600"></i> Facility Profile
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Facility Name</label>
+                    <input type="text" name="facility_name" required placeholder="e.g. Oakridge Community Health Center" class="w-full bg-slate-50 border rounded-lg p-2.5">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Facility Type</label>
+                    <select name="facility_type" required class="w-full bg-slate-50 border rounded-lg p-2.5">
+                        <option value="Community Clinic">Community Clinic</option>
+                        <option value="Hospital">Hospital / Regional Medical Center</option>
+                        <option value="Urgent Care">Urgent Care Center</option>
+                        <option value="Regional Pharmacy">Regional Pharmacy / Distribution Hub</option>
+                        <option value="Dispensary">Rural Dispensary</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">State / DEA License Number</label>
+                    <input type="text" name="license_number" required placeholder="e.g. CLIN-CAL-7782" class="w-full bg-slate-50 border rounded-lg p-2.5 font-mono">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">City</label>
+                    <input type="text" name="city" required placeholder="e.g. Metro City" class="w-full bg-slate-50 border rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Region / District</label>
+                    <input type="text" name="region" required placeholder="e.g. West District" class="w-full bg-slate-50 border rounded-lg p-2.5">
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Street Address</label>
+                <input type="text" name="address" required placeholder="e.g. 500 Healthcare Way, Suite 100" class="w-full bg-slate-50 border rounded-lg p-2.5">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Contact Email</label>
+                    <input type="email" name="contact_email" required placeholder="pharmacy@oakridge-health.org" class="w-full bg-slate-50 border rounded-lg p-2.5">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Contact Phone</label>
+                    <input type="text" name="contact_phone" required placeholder="+1 (555) 789-0123" class="w-full bg-slate-50 border rounded-lg p-2.5">
+                </div>
+            </div>
+
+            <div class="p-3 bg-sky-50 rounded-xl border border-sky-200 flex items-center justify-between">
+                <div>
+                    <div class="font-bold text-sky-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-snowflake text-sky-600"></i> Certified Cold Chain Storage (2-8°C)
+                    </div>
+                    <div class="text-[11px] text-sky-700">Does this facility maintain continuous calibrated refrigerated vaccine and insulin storage?</div>
+                </div>
+                <input type="checkbox" name="has_cold_chain" value="1" checked class="w-4 h-4 text-teal-600 rounded">
+            </div>
+        </div>
+
+        <!-- Section 2: Staff Account & Role -->
+        <div class="space-y-4 pt-4 border-t border-slate-100">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
+                <i class="fa-solid fa-id-badge text-teal-600"></i> Primary Staff Access & Credentials
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Full Legal Name & Title</label>
+                    <input type="text" name="full_name" required placeholder="e.g. Dr. Jordan Rivera, PharmD" class="w-full bg-slate-50 border rounded-lg p-2.5">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Role in Network</label>
+                    <select name="role" required class="w-full bg-slate-50 border rounded-lg p-2.5">
+                        <option value="facility_manager">Facility Inventory Manager</option>
+                        <option value="staff">Clinic / Pharmacy Staff</option>
+                        <option value="approver">Authorized Regulatory Approver</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Professional License / Medical Badge Number</label>
+                <input type="text" name="license_or_badge" required placeholder="e.g. PHARM-LIC-88219" class="w-full bg-slate-50 border rounded-lg p-2.5 font-mono">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Portal Username</label>
+                    <input type="text" name="username" required placeholder="e.g. jordan_rivera" class="w-full bg-slate-50 border rounded-lg p-2.5 font-mono">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Account Password</label>
+                    <input type="password" name="password" required placeholder="Create secure password" class="w-full bg-slate-50 border rounded-lg p-2.5">
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <a href="{{ url_for('login') }}" class="text-xs text-slate-500 hover:text-slate-800">
+                Already registered? Sign In
+            </a>
+            <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-2.5 px-6 rounded-xl shadow-md transition">
+                Register & Initialize Account
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

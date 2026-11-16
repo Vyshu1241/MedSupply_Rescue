@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}Transfer Coordination Pipeline{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-right-left text-teal-600"></i> Inter-Facility Medicine Transfer Pipeline
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">
+                Authorized chain-of-custody workflow: Approval &rarr; Dispatch &rarr; Temperature-Verified Transport &rarr; Receipt & Quantity Reconciliation.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-600">Current Role:</span>
+            <span class="bg-slate-100 text-slate-800 border px-2.5 py-1 rounded-lg text-xs font-mono font-bold">
+                {{ g.user.role }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Active Transfers List -->
+    <div class="space-y-4">
+        {% for t in transfers %}
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <!-- Top Card Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <span class="font-mono text-sm font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">{{ t.transfer_code }}</span>
+                        {% if t.cold_chain_required %}
+                            <span class="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-sky-200 flex items-center gap-1">
+                                <i class="fa-solid fa-snowflake text-[9px]"></i> Cold Chain (2-8°C)
+                            </span>
+                        {% endif %}
+                        <span class="text-xs text-slate-400">&bull; Created {{ t.created_at[:10] }}</span>
+                    </div>
+
+                    <!-- Status Pill -->
+                    <div>
+                        {% if t.status == 'PENDING_APPROVAL' %}
+                            <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-pen-nib text-[10px]"></i> Pending Authorized Approval
+                            </span>
+                        {% elif t.status == 'APPROVED' %}
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full border border-blue-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-box text-[10px]"></i> Approved &bull; Ready to Dispatch
+                            </span>
+                        {% elif t.status == 'DISPATCHED' %}
+                            <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full border border-purple-200 flex items-center gap-1.5 animate-pulse">
+                                <i class="fa-solid fa-truck-fast text-[10px]"></i> In Transit (Courier Dispatched)
+                            </span>
+                        {% elif t.status == 'RECONCILED' %}
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check text-[10px]"></i> Reconciled & Completed
+                            </span>
+                        {% else %}
+                            <span class="bg-slate-100 text-slate-800 text-xs font-bold px-3 py-1 rounded-full">{{ t.status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Transfer Routing & Medicine Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-slate-50/70 p-4 rounded-xl border border-slate-100 text-xs">
+                    <!-- Source Donor -->
+                    <div>
+                        <div class="text-[10px] font-bold uppercase text-slate-400">Donor Facility</div>
+                        <div class="font-bold text-slate-900 text-sm mt-0.5">{{ t.source_facility_name }}</div>
+                        <div class="text-slate-500 text-[11px]">{{ t.source_city }}</div>
+                    </div>
+
+                    <!-- Medicine Info in the Middle -->
+                    <div class="text-center border-y md:border-y-0 md:border-x border-slate-200 py-2 md:py-0 md:px-4">
+                        <div class="text-base font-extrabold text-teal-700">{{ t.quantity }} {{ t.unit_of_measure }}</div>
+                        <div class="font-bold text-slate-900 text-xs mt-0.5">{{ t.generic_name }}</div>
+                        <div class="text-[11px] text-slate-500">Batch: <span class="font-mono font-bold">{{ t.batch_number }}</span> &bull; Exp: {{ t.expiry_date }}</div>
+                    </div>
+
+                    <!-- Destination Facility -->
+                    <div class="text-right">
+                        <div class="text-[10px] font-bold uppercase text-slate-400">Recipient Clinic</div>
+                        <div class="font-bold text-slate-900 text-sm mt-0.5">{{ t.dest_facility_name }}</div>
+                        <div class="text-slate-500 text-[11px]">{{ t.dest_city }}</div>
+                    </div>
+                </div>
+
+                <!-- Visual 4-Step Stepper -->
+                <div class="pt-2">
+                    <div class="grid grid-cols-4 gap-2 text-center text-[10px] font-semibold">
+                        <!-- Step 1: Requested -->
+                        <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+                            <i class="fa-solid fa-file-circle-check text-xs mb-1 block"></i>
+                            1. Requested
+                            <div class="text-[9px] font-normal text-slate-500 mt-0.5">{{ t.requester_name }}</div>
+                        </div>
+
+                        <!-- Step 2: Approved -->
+                        <div class="p-2 rounded-lg {% if t.status in ('APPROVED', 'DISPATCHED', 'RECONCILED') %}bg-emerald-50 border border-emerald-200 text-emerald-800{% else %}bg-slate-100 text-slate-400{% endif %}">
+                            <i class="fa-solid fa-stamp text-xs mb-1 block"></i>
+                            2. Approved
+                            <div class="text-[9px] font-normal text-slate-500 mt-0.5">{{ t.approver_name or 'Awaiting' }}</div>
+                        </div>
+
+                        <!-- Step 3: Dispatched -->
+                        <div class="p-2 rounded-lg {% if t.status in ('DISPATCHED', 'RECONCILED') %}bg-emerald-50 border border-emerald-200 text-emerald-800{% else %}bg-slate-100 text-slate-400{% endif %}">
+                            <i class="fa-solid fa-truck-arrow-right text-xs mb-1 block"></i>
+                            3. Dispatched
+                            <div class="text-[9px] font-normal text-slate-500 mt-0.5">{{ t.carrier or 'Courier' }}</div>
+                        </div>
+
+                        <!-- Step 4: Reconciled -->
+                        <div class="p-2 rounded-lg {% if t.status == 'RECONCILED' %}bg-emerald-50 border border-emerald-200 text-emerald-800{% else %}bg-slate-100 text-slate-400{% endif %}">
+                            <i class="fa-solid fa-clipboard-check text-xs mb-1 block"></i>
+                            4. Reconciled
+                            <div class="text-[9px] font-normal text-slate-500 mt-0.5">{{ t.received_quantity ~ ' units' if t.received_quantity else 'Pending' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Bar for Current State -->
+                <div class="pt-3 border-t border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                    <!-- Left: Metadata/Logs -->
+                    <div class="text-[11px] text-slate-500 space-x-2">
+                        {% if t.approval_sig %}
+                            <span class="inline-flex items-center gap-1 font-mono text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                                <i class="fa-solid fa-signature"></i> Sig: {{ t.approval_sig[:12] }}...
+                            </span>
+                        {% endif %}
+                        {% if t.tracking_number %}
+                            <span>Tracking: <strong class="font-mono text-slate-700">{{ t.tracking_number }}</strong></span>
+                        {% endif %}
+                        {% if t.dispatch_temperature %}
+                            <span>Departure: <strong class="text-slate-800">{{ t.dispatch_temperature }}°C</strong></span>
+                        {% endif %}
+                        {% if t.arrival_temperature %}
+                            <span>Arrival: <strong class="text-slate-800">{{ t.arrival_temperature }}°C</strong></span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Right: State Transition Buttons -->
+                    <div class="flex items-center gap-2">
+                        <!-- If PENDING_APPROVAL: Approver can approve -->
+                        {% if t.status == 'PENDING_APPROVAL' %}
+                            <form method="POST" action="{{ url_for('approve_transfer_route', transfer_id=t.id) }}" class="inline">
+                                <input type="hidden" name="comments" value="Authorized for clinical emergency inter-facility redistribution under regulatory supply directives.">
+                                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-pen-fancy"></i> Authorize & Sign Transfer
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <!-- If APPROVED: Donor facility manager can dispatch -->
+                        {% if t.status == 'APPROVED' %}
+                            <button onclick="document.getElementById('dispatchModal_{{ t.id }}').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-truck"></i> Dispatch Shipment
+                            </button>
+                        {% endif %}
+
+                        <!-- If DISPATCHED: Receiving facility can receive & reconcile -->
+                        {% if t.status == 'DISPATCHED' %}
+                            <button onclick="document.getElementById('reconcileModal_{{ t.id }}').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-box-open"></i> Receive & Reconcile
+                            </button>
+                        {% endif %}
+
+                        {% if t.status == 'RECONCILED' %}
+                            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                <i class="fa-solid fa-check-double mr-1"></i> Chain of Custody Completed
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispatch Modal for this transfer -->
+            <div id="dispatchModal_{{ t.id }}" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-900">
+                            Dispatch Shipment &bull; {{ t.transfer_code }}
+                        </h3>
+                        <button onclick="document.getElementById('dispatchModal_{{ t.id }}').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('dispatch_transfer_route', transfer_id=t.id) }}" class="mt-4 space-y-3 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Carrier / Courier Name</label>
+                            <input type="text" name="carrier" value="MedExpress Regional Logistics" required class="w-full bg-slate-50 border rounded-lg p-2 font-medium">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Tracking Number</label>
+                            <input type="text" name="tracking_number" value="TRK-MED-{{ t.id }}9412" required class="w-full bg-slate-50 border rounded-lg p-2 font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Departure Temperature (°C)</label>
+                            <input type="number" step="0.1" name="dispatch_temperature" value="{% if t.cold_chain_required %}4.0{% else %}21.5{% endif %}" required class="w-full bg-slate-50 border rounded-lg p-2 font-mono">
+                            <span class="text-[10px] text-slate-400">{% if t.cold_chain_required %}Refrigerated cold chain (2-8°C required){% else %}Standard ambient room temperature{% endif %}</span>
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Packaging & Tamper-Seal Notes</label>
+                            <textarea name="dispatch_notes" rows="2" class="w-full bg-slate-50 border rounded-lg p-2" placeholder="e.g. Tamper seal #8812 applied. Temp monitor activated."></textarea>
+                        </div>
+
+                        <div class="pt-3 border-t flex justify-end gap-2">
+                            <button type="button" onclick="document.getElementById('dispatchModal_{{ t.id }}').classList.add('hidden')" class="px-3 py-1.5 bg-slate-100 rounded-lg">Cancel</button>
+                            <button type="submit" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg">Confirm Dispatch</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reconcile Modal for this transfer -->
+            <div id="reconcileModal_{{ t.id }}" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-900">
+                            Receive & Reconcile &bull; {{ t.transfer_code }}
+                        </h3>
+                        <button onclick="document.getElementById('reconcileModal_{{ t.id }}').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('reconcile_transfer_route', transfer_id=t.id) }}" class="mt-4 space-y-3 text-xs">
+                        <div class="bg-teal-50 p-2.5 rounded-lg border border-teal-200">
+                            <div class="font-bold text-teal-900">Expected Quantity: {{ t.quantity }} {{ t.unit_of_measure }}</div>
+                            <div class="text-[11px] text-teal-700">{{ t.generic_name }} (Batch: {{ t.batch_number }})</div>
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Actually Received Quantity</label>
+                            <input type="number" name="received_quantity" value="{{ t.quantity }}" min="0" required class="w-full bg-slate-50 border rounded-lg p-2 font-bold text-slate-900">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Arrival Temperature (°C)</label>
+                            <input type="number" step="0.1" name="arrival_temperature" value="{% if t.cold_chain_required %}4.2{% else %}21.8{% endif %}" required class="w-full bg-slate-50 border rounded-lg p-2 font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Storage Location in Receiving Facility</label>
+                            <input type="text" name="storage_location" value="Main Clinic Medication Room - Bay 2" required class="w-full bg-slate-50 border rounded-lg p-2">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Discrepancy Reason (if count or seal differs)</label>
+                            <input type="text" name="discrepancy_reason" placeholder="e.g. 1 vial broken in transit, or Leave blank if count matches" class="w-full bg-slate-50 border rounded-lg p-2">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Receipt Notes</label>
+                            <textarea name="receipt_notes" rows="2" class="w-full bg-slate-50 border rounded-lg p-2" placeholder="e.g. Seals intact, expiry date checked, cold chain maintained."></textarea>
+                        </div>
+
+                        <div class="pt-3 border-t flex justify-end gap-2">
+                            <button type="button" onclick="document.getElementById('reconcileModal_{{ t.id }}').classList.add('hidden')" class="px-3 py-1.5 bg-slate-100 rounded-lg">Cancel</button>
+                            <button type="submit" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg">Complete Reconciliation</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        {% else %}
+            <div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 text-xs">
+                No transfer requests in pipeline. Report a shortage or run matching to start an inter-facility transfer.
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "MedSupply Rescue (Web App)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PORT": "5001",
+                "FLASK_DEBUG": "1"
+            }
+        },
+        {
+            "name": "Run Test Suite",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_system.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}
