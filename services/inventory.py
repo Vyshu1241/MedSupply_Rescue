@@ -134,7 +134,7 @@ def get_facility_inventory(conn, facility_id=None, medicine_id=None, category=No
             d['expiry_badge_class'] = 'bg-red-100 text-red-800 border-red-300'
         elif days_to_expiry <= 30:
             d['expiry_status'] = 'CRITICAL (<30d)'
-            d['expiry_badge_class'] = 'bg-red-600 text-white font-bold animate-pulse'
+            d['expiry_badge_class'] = 'bg-red-600 text-white font-bold'
         elif days_to_expiry <= 60:
             d['expiry_status'] = 'WARNING (<60d)'
             d['expiry_badge_class'] = 'bg-amber-100 text-amber-800 border-amber-300'
