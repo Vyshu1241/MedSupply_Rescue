@@ -189,10 +189,85 @@ class TestMedSupplyRescue(unittest.TestCase):
 
     def test_08_flask_http_routes(self):
         """Ensure all web views render HTTP 200 OK."""
-        routes = ['/', '/inventory', '/shortages', '/transfers', '/forecasting', '/audit', '/simulation', '/login']
+        routes = ['/', '/inventory', '/shortages', '/transfers', '/forecasting', '/audit', '/simulation', '/login', '/workspaces']
         for r in routes:
             resp = self.client.get(r, follow_redirects=True)
             self.assertEqual(resp.status_code, 200, f"Route {r} failed with status {resp.status_code}")
+
+    def test_09_personal_workspaces_are_saved_and_owner_scoped(self):
+        """Users can create multiple saved views, but cannot open another user's workspace."""
+        self.client.get('/quick-login/3')
+
+        self.client.post('/workspaces/create', data={
+            'name': 'Expiry queue',
+            'view_type': 'expiry_watchlist'
+        })
+        self.client.post('/workspaces/create', data={
+            'name': 'Stock sheet',
+            'view_type': 'inventory'
+        })
+
+        workspaces = self.conn.execute(
+            "SELECT id, name FROM saved_workspaces WHERE owner_user_id = 3 ORDER BY id"
+        ).fetchall()
+        self.assertEqual([row['name'] for row in workspaces], ['Expiry queue', 'Stock sheet'])
+
+        workspace_id = workspaces[0]['id']
+        response = self.client.get(f'/workspaces/{workspace_id}')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Expiry queue', response.data)
+        self.assertIn(b'Spreadsheet view', response.data)
+        inventory_response = self.client.get(f"/workspaces/{workspaces[1]['id']}")
+        self.assertEqual(inventory_response.status_code, 200)
+
+        for view_type in ('shortages', 'transfers', 'forecasting'):
+            name = f'{view_type.title()} sheet'
+            self.client.post('/workspaces/create', data={
+                'name': name,
+                'view_type': view_type
+            })
+            view_workspace = self.conn.execute(
+                "SELECT id FROM saved_workspaces WHERE owner_user_id = 3 AND name = ?",
+                (name,)
+            ).fetchone()
+            self.assertIsNotNone(view_workspace)
+            view_response = self.client.get(f"/workspaces/{view_workspace['id']}")
+            self.assertEqual(view_response.status_code, 200, f"{view_type} workspace failed to render")
+            if view_type == 'forecasting':
+                page_two_response = self.client.get(
+                    f"/workspaces/{view_workspace['id']}?page=2"
+                )
+                self.assertEqual(page_two_response.status_code, 200)
+                self.assertIn(b'Rows 11-', page_two_response.data)
+
+        for index in range(10):
+            self.client.post('/workspaces/create', data={
+                'name': f'Extra sheet {index + 1}',
+                'view_type': 'inventory'
+            })
+        workspace_count = self.conn.execute(
+            "SELECT count(*) FROM saved_workspaces WHERE owner_user_id = 3"
+        ).fetchone()[0]
+        self.assertEqual(workspace_count, 15, "Workspace creation should not impose a small fixed limit")
+
+        self.client.get('/quick-login/5')
+        response = self.client.get(f'/workspaces/{workspace_id}')
+        self.assertEqual(response.status_code, 404)
+
+        self.client.get('/quick-login/3')
+        batch_count_before = self.conn.execute("SELECT count(*) FROM batches").fetchone()[0]
+        for row in self.conn.execute(
+            "SELECT id FROM saved_workspaces WHERE owner_user_id = 3"
+        ).fetchall():
+            response = self.client.post(f"/workspaces/{row['id']}/delete")
+            self.assertEqual(response.status_code, 302)
+            self.assertIsNone(self.conn.execute(
+                "SELECT id FROM saved_workspaces WHERE id = ?", (row['id'],)
+            ).fetchone())
+        self.assertEqual(
+            self.conn.execute("SELECT count(*) FROM batches").fetchone()[0],
+            batch_count_before
+        )
 
 if __name__ == '__main__':
     unittest.main()

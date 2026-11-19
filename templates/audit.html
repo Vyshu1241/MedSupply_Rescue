@@ -8,46 +8,46 @@
     <!-- Header & Verification Banner -->
     <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-6 text-white shadow-xl border border-emerald-500/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <div class="flex items-center gap-2 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <div class="flex items-center gap-2 text-emerald-400 text-sm font-semibold uppercase tracking-wider mb-1">
                 <i class="fa-solid fa-link"></i> Immutable-Style Hash Chain
             </div>
             <h1 class="text-2xl font-bold tracking-tight">Regulatory Audit Trail & Provenance Ledger</h1>
-            <p class="text-slate-300 text-xs mt-1 max-w-2xl">
+            <p class="text-slate-300 text-sm mt-1 max-w-2xl">
                 Every batch creation, shortage report, authorized sign-off, courier dispatch, and quantity reconciliation is immutably linked via SHA-256 block hashing.
             </p>
         </div>
 
         <div class="bg-emerald-950/70 border border-emerald-500/50 rounded-xl p-4 text-center shrink-0">
-            <div class="flex items-center justify-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+            <div class="flex items-center justify-center gap-2 text-emerald-400 text-sm font-bold uppercase tracking-wider">
                 <i class="fa-solid fa-shield-check text-base"></i> Chain Status
             </div>
             <div class="text-xl font-mono font-bold text-white mt-1">{{ verification.status }}</div>
-            <div class="text-[11px] text-emerald-300 font-mono mt-0.5">{{ verification.count }} Blocks Cryptographically Linked</div>
+            <div class="text-xs text-emerald-300 font-mono mt-0.5">{{ verification.count }} Blocks Cryptographically Linked</div>
         </div>
     </div>
 
     <!-- Verification Report Details Card -->
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div class="space-y-1">
-            <h3 class="text-xs font-bold uppercase text-slate-500">Continuous Integrity Verification</h3>
+            <h3 class="text-sm font-bold uppercase text-slate-500">Continuous Integrity Verification</h3>
             <p class="text-sm font-semibold text-slate-800">
                 {{ verification.message }}
             </p>
-            <div class="text-xs font-mono text-slate-500 truncate max-w-2xl">
+            <div class="text-sm font-mono text-slate-500 max-w-2xl break-all">
                 Latest Tip Hash: <span class="text-teal-700 font-bold">{{ verification.latest_hash }}</span>
             </div>
         </div>
 
-        <button onclick="window.location.reload()" class="bg-slate-900 hover:bg-slate-800 text-teal-300 font-semibold text-xs px-4 py-2.5 rounded-lg border border-slate-700 transition flex items-center gap-2">
+        <button onclick="window.location.reload()" class="bg-slate-900 hover:bg-slate-800 text-teal-300 font-semibold text-sm px-4 py-2.5 rounded-lg border border-slate-700 transition flex items-center gap-2">
             <i class="fa-solid fa-arrows-rotate"></i> Re-Calculate All Block Hashes
         </button>
     </div>
 
     <!-- Audit Events Stream -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" data-paginated-results="audit" aria-live="polite">
         <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 class="text-sm font-bold text-slate-900">Cryptographic Block Stream (Genesis &rarr; Tip)</h3>
-            <span class="text-xs font-mono text-slate-500">Showing last {{ events|length }} events</span>
+            <span class="text-sm font-mono text-slate-500">Showing {{ pagination.start }}-{{ pagination.end }} of {{ pagination.total_items }} events</span>
         </div>
 
         <div class="divide-y divide-slate-100">
@@ -55,11 +55,11 @@
                 <div class="p-4 hover:bg-slate-50/70 transition space-y-2.5">
                     <!-- Top Row -->
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-mono text-sm font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded border">
                                 Block #{{ e.id }} &bull; {{ e.event_uuid }}
                             </span>
-                            <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded 
+                            <span class="inline-block text-xs font-bold px-2 py-1 rounded 
                                 {% if e.action == 'APPROVE' %}bg-amber-100 text-amber-800 border border-amber-200
                                 {% elif e.action == 'DISPATCH' %}bg-blue-100 text-blue-800 border border-blue-200
                                 {% elif e.action == 'RECONCILE' %}bg-purple-100 text-purple-800 border border-purple-200
@@ -67,43 +67,44 @@
                                 {% else %}bg-slate-100 text-slate-700 border{% endif %}">
                                 {{ e.entity_type }} &bull; {{ e.action }}
                             </span>
-                            <span class="text-xs font-bold text-slate-800">Target: {{ e.entity_id }}</span>
+                            <span class="text-sm font-bold text-slate-800">Target: {{ e.entity_id }}</span>
                         </div>
 
-                        <div class="text-[11px] text-slate-400 font-mono">
-                            <i class="fa-solid fa-clock text-[10px] mr-1"></i> {{ e.timestamp }}
+                        <div class="text-sm text-slate-500 font-mono">
+                            <i class="fa-solid fa-clock mr-1"></i> {{ e.timestamp }}
                         </div>
                     </div>
 
                     <!-- Actor & Facility Row -->
-                    <div class="text-xs text-slate-600 flex flex-wrap items-center gap-2">
-                        <span>Actor: <strong class="text-slate-800">{{ e.user_name }}</strong> (<span class="font-mono text-[11px]">{{ e.user_role }}</span>)</span>
+                    <div class="text-sm text-slate-600 flex flex-wrap items-center gap-2">
+                        <span>Actor: <strong class="text-slate-800">{{ e.user_name }}</strong> (<span class="font-mono text-xs">{{ e.user_role }}</span>)</span>
                         <span class="text-slate-300">&bull;</span>
                         <span>Facility: <strong class="text-slate-800">{{ e.facility_name or 'System HQ' }}</strong></span>
                     </div>
 
                     <!-- Block Hash Linkage (SHA-256) -->
-                    <div class="bg-slate-900 p-2.5 rounded-lg text-[10px] font-mono text-slate-300 space-y-1">
-                        <div class="flex items-center gap-2 truncate">
-                            <span class="text-slate-500 shrink-0">Previous Hash:</span>
-                            <span class="text-slate-400">{{ e.previous_hash }}</span>
+                    <div class="bg-slate-900 p-3 rounded-lg text-xs font-mono text-slate-300 space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+                            <span class="text-slate-400 shrink-0 font-semibold">Previous Hash:</span>
+                            <span class="text-slate-300 break-all">{{ e.previous_hash }}</span>
                         </div>
-                        <div class="flex items-center gap-2 truncate">
+                        <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
                             <span class="text-emerald-400 shrink-0 font-bold">Current Hash:</span>
-                            <span class="text-emerald-300 font-semibold">{{ e.current_hash }}</span>
+                            <span class="text-emerald-300 font-semibold break-all">{{ e.current_hash }}</span>
                         </div>
                     </div>
 
                     <!-- Payload Details (Collapsible) -->
-                    <details class="text-xs text-slate-600 cursor-pointer">
-                        <summary class="font-semibold text-teal-700 hover:text-teal-800 text-[11px]">
-                            <i class="fa-solid fa-code text-[10px] mr-1"></i> View Event Data Payload
+                    <details class="text-sm text-slate-600 cursor-pointer">
+                        <summary class="font-semibold text-teal-700 hover:text-teal-800">
+                            <i class="fa-solid fa-code mr-1"></i> View Event Data Payload
                         </summary>
-                        <pre class="mt-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-[11px] font-mono overflow-x-auto text-slate-800">{{ e.payload_pretty }}</pre>
+                        <pre class="mt-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs font-mono overflow-x-auto text-slate-800">{{ e.payload_pretty }}</pre>
                     </details>
                 </div>
             {% endfor %}
         </div>
+        {% include 'pagination.html' %}
     </div>
 
 </div>

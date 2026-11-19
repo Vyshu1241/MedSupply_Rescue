@@ -183,9 +183,22 @@ CREATE TABLE IF NOT EXISTS redistribution_recommendations (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 12. Personal saved views (workspaces)
+CREATE TABLE IF NOT EXISTS saved_workspaces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
+    view_type TEXT NOT NULL CHECK (
+        view_type IN ('expiry_watchlist', 'inventory', 'shortages', 'transfers', 'forecasting')
+    ),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (owner_user_id, name COLLATE NOCASE)
+);
+
 -- Indexes for high-speed queries
 CREATE INDEX IF NOT EXISTS idx_batches_med_fac ON batches(medicine_id, facility_id, status);
 CREATE INDEX IF NOT EXISTS idx_batches_expiry ON batches(expiry_date);
 CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfer_requests(status);
 CREATE INDEX IF NOT EXISTS idx_shortages_status ON shortage_requests(status);
 CREATE INDEX IF NOT EXISTS idx_consumption_date ON daily_consumption(facility_id, medicine_id, consumption_date);
+CREATE INDEX IF NOT EXISTS idx_saved_workspaces_owner ON saved_workspaces(owner_user_id, id);

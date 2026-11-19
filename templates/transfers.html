@@ -14,6 +14,9 @@
             <p class="text-xs text-slate-500 mt-0.5">
                 Authorized chain-of-custody workflow: Approval &rarr; Dispatch &rarr; Temperature-Verified Transport &rarr; Receipt & Quantity Reconciliation.
             </p>
+            <p class="mt-2 text-sm text-slate-600">
+                Inventory coordination only, not clinical advice. Transfers require authorized approval and must follow applicable laws and facility policies.
+            </p>
         </div>
 
         <div class="flex items-center gap-2">
@@ -25,7 +28,7 @@
     </div>
 
     <!-- Active Transfers List -->
-    <div class="space-y-4">
+    <div class="space-y-4" data-paginated-results="transfers" aria-live="polite">
         {% for t in transfers %}
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
                 <!-- Top Card Header -->
@@ -274,6 +277,7 @@
                 No transfer requests in pipeline. Report a shortage or run matching to start an inter-facility transfer.
             </div>
         {% endfor %}
+        {% include 'pagination.html' %}
     </div>
 
 </div>

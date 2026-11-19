@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}My Workspaces{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+    <header>
+        <h1 class="text-2xl font-bold text-slate-900">My workspaces</h1>
+        <p class="mt-1 text-sm text-slate-600">Create personal tabs for the live records you use most. Workspaces save views, not duplicate or edit source data.</p>
+    </header>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-labelledby="create-workspace-heading">
+        <h2 id="create-workspace-heading" class="text-base font-semibold text-slate-900">Add a workspace</h2>
+        <form method="POST" action="{{ url_for('create_workspace') }}" class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.8fr)_auto] sm:items-end">
+            <div>
+                <label for="workspace-name" class="mb-1 block text-sm font-medium text-slate-700">Workspace name</label>
+                <input id="workspace-name" name="name" type="text" maxlength="50" required placeholder="e.g. Expiring this month" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100">
+            </div>
+            <div>
+                <label for="workspace-view" class="mb-1 block text-sm font-medium text-slate-700">Live data view</label>
+                <select id="workspace-view" name="view_type" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100">
+                    {% for view_type, view_label in workspace_views.items() %}
+                        <option value="{{ view_type }}">{{ view_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Add tab
+            </button>
+        </form>
+    </section>
+
+    <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <nav class="flex min-h-12 items-end gap-1 overflow-x-auto border-b border-slate-200 bg-slate-50 px-3 pt-2" aria-label="Personal workspaces">
+            {% for workspace in workspaces %}
+                <a href="{{ url_for('workspace_detail', workspace_id=workspace.id) }}" {% if selected_workspace and selected_workspace.id == workspace.id %}aria-current="page"{% endif %} class="max-w-56 shrink-0 truncate rounded-t-lg border border-b-0 px-4 py-2 text-sm font-medium {% if selected_workspace and selected_workspace.id == workspace.id %}border-slate-200 bg-white text-teal-800{% else %}border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+                    {{ workspace.name }}
+                </a>
+            {% endfor %}
+        </nav>
+
+        {% if selected_workspace %}
+            <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ selected_workspace.name }}</h2>
+                    <p class="text-sm text-slate-600">{{ workspace_views[selected_workspace.view_type] }} &middot; Live data</p>
+                </div>
+                <form method="POST" action="{{ url_for('delete_workspace', workspace_id=selected_workspace.id) }}" onsubmit="return confirm('Remove this saved workspace? The underlying records will not be changed.');">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800">
+                        <i class="fa-solid fa-trash-can" aria-hidden="true"></i> Remove workspace
+                    </button>
+                </form>
+            </div>
+
+            <div data-paginated-results="workspaces" aria-live="polite">
+                <div class="flex items-center justify-between px-4 py-3 text-sm text-slate-600">
+                    <span>Spreadsheet view</span>
+                    {% if pagination.total_items %}
+                        <span>Rows {{ pagination.start }}-{{ pagination.end }} of {{ pagination.total_items }}</span>
+                    {% else %}
+                        <span>No records in this view</span>
+                    {% endif %}
+                </div>
+                <div class="max-h-[65vh] overflow-auto">
+                    <table class="w-full min-w-[850px] border-collapse text-left text-sm">
+                        <thead class="sticky top-0 z-10 bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            <tr>
+                                <th scope="col" class="sticky left-0 w-14 border border-slate-200 bg-slate-100 px-3 py-2.5 text-right">#</th>
+                                {% for column in workspace_data.columns %}
+                                    <th scope="col" class="whitespace-nowrap border border-slate-200 px-3 py-2.5">{{ column.label }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in workspace_data.records %}
+                                <tr class="odd:bg-white even:bg-slate-50 hover:bg-teal-50/60">
+                                    <th scope="row" class="sticky left-0 border border-slate-200 bg-slate-100 px-3 py-2 text-right font-mono text-xs font-normal text-slate-500">{{ pagination.offset + loop.index }}</th>
+                                    {% for column in workspace_data.columns %}
+                                        <td class="border border-slate-200 px-3 py-2 text-slate-800">{{ record[column.key] if record[column.key] is not none else '—' }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="{{ workspace_data.columns|length + 1 }}" class="border border-slate-200 px-4 py-10 text-center text-sm text-slate-500">No records match this view right now.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include 'pagination.html' %}
+            </div>
+        {% elif workspaces %}
+            <div class="px-5 py-10 text-center">
+                <i class="fa-solid fa-table-cells-large text-3xl text-teal-700" aria-hidden="true"></i>
+                <h2 class="mt-3 text-lg font-semibold text-slate-900">Choose a workspace tab</h2>
+                <p class="mt-1 text-sm text-slate-600">Select a tab above or add another live data view.</p>
+            </div>
+        {% else %}
+            <div class="px-5 py-10 text-center">
+                <i class="fa-solid fa-table-cells-large text-3xl text-teal-700" aria-hidden="true"></i>
+                <h2 class="mt-3 text-lg font-semibold text-slate-900">Start with a personal workspace</h2>
+                <p class="mt-1 text-sm text-slate-600">Name a tab and choose a live data view. Add as many workspaces as you need.</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

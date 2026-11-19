@@ -32,6 +32,23 @@ def init_db(force_reseed=False):
         conn.commit()
         seed_data(conn)
     else:
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS saved_workspaces (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
+                view_type TEXT NOT NULL CHECK (
+                    view_type IN ('expiry_watchlist', 'inventory', 'shortages', 'transfers', 'forecasting')
+                ),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (owner_user_id, name COLLATE NOCASE)
+            )"""
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_saved_workspaces_owner ON saved_workspaces(owner_user_id, id)"
+        )
+        conn.commit()
+
         # Check if empty
         row = cursor.execute("SELECT count(*) as count FROM facilities").fetchone()
         if row['count'] == 0:
@@ -45,7 +62,7 @@ def seed_data(conn):
     
     # Clear tables
     for table in [
-        'audit_events', 'approvals', 'transfer_requests', 'shortage_requests',
+        'saved_workspaces', 'audit_events', 'approvals', 'transfer_requests', 'shortage_requests',
         'stock_movements', 'daily_consumption', 'batches', 'medicines',
         'users', 'facilities', 'redistribution_recommendations'
     ]:

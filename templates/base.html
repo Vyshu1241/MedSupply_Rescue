@@ -7,19 +7,47 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        const supplyGreens = {
+            50: '#f4f8f5',
+            100: '#e6f0e9',
+            200: '#d0e4d7',
+            300: '#a8d5ba',
+            400: '#6bbf8a',
+            500: '#4b9b6e',
+            600: '#2e7d5c',
+            700: '#256849',
+            800: '#1b5e3a',
+            900: '#164b2f',
+            950: '#0e3824',
+        };
+        const supplyNeutrals = {
+            50: '#f7f9f7',
+            100: '#eff3ef',
+            200: '#dde5de',
+            300: '#c4d0c6',
+            400: '#718174',
+            500: '#5c6e60',
+            600: '#46574a',
+            700: '#35473a',
+            800: '#26372b',
+            900: '#18281d',
+            950: '#0e1711',
+        };
+
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        medical: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            700: '#0f766e',
-                            800: '#115e59',
-                            900: '#134e4a',
-                        },
+                        slate: supplyNeutrals,
+                        teal: supplyGreens,
+                        emerald: supplyGreens,
+                        green: supplyGreens,
+                        blue: supplyGreens,
+                        cyan: supplyGreens,
+                        sky: supplyGreens,
+                        indigo: supplyGreens,
+                        purple: supplyGreens,
+                        medical: supplyGreens,
                         urgent: {
                             50: '#fff1f2',
                             100: '#ffe4e6',
@@ -39,120 +67,118 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        .app-header { position: sticky; top: 0; z-index: 50; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Top Alert / System Status Bar -->
-    <header class="bg-slate-900 text-white text-xs border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 py-1.5 flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center space-x-3">
-                <span class="inline-flex items-center gap-1.5 bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-mono">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span>LEDGER: CRYPTOGRAPHICALLY SECURE</span>
-                </span>
-                <span class="text-slate-400 hidden sm:inline">|</span>
-                <span class="text-slate-300 hidden md:inline">
-                    <i class="fa-solid fa-shield-halved text-medical-500 mr-1"></i> Authorized Medical Supply Coordination Network
-                </span>
+    <button id="sidebarBackdrop" class="fixed inset-0 z-40 hidden bg-slate-950/40 lg:hidden" type="button" aria-label="Close navigation menu"></button>
+
+    <aside id="appSidebar" class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Main sidebar">
+        <a href="{{ url_for('dashboard') }}" class="flex h-20 shrink-0 items-center gap-3 border-b border-slate-200 px-5">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm">
+                <i class="fa-solid fa-truck-medical text-lg" aria-hidden="true"></i>
+            </span>
+            <span class="min-w-0">
+                <span class="block text-lg font-bold leading-tight text-slate-900">MedSupply <span class="text-teal-700">Rescue</span></span>
+                <span class="mt-1 block text-xs text-slate-500">Facility coordination</span>
+            </span>
+        </a>
+
+        <nav class="flex-1 overflow-y-auto px-3 py-5" aria-label="Primary navigation">
+            <p class="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Workspace</p>
+            <div class="mt-3 space-y-1">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint == 'dashboard' %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}>
+                    <i class="fa-solid fa-chart-pie w-5 text-center" aria-hidden="true"></i> Dashboard
+                </a>
+                <a href="{{ url_for('inventory') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint == 'inventory' %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint == 'inventory' %}aria-current="page"{% endif %}>
+                    <i class="fa-solid fa-boxes-stacked w-5 text-center" aria-hidden="true"></i> Batch inventory
+                </a>
+                <a href="{{ url_for('shortages') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint == 'shortages' %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint == 'shortages' %}aria-current="page"{% endif %}>
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-triangle-exclamation w-5 text-center" aria-hidden="true"></i> Shortages</span>
+                    {% if g.alert_summary.active_shortages|length > 0 %}
+                        <span class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">{{ g.alert_summary.active_shortages|length }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('transfers') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint == 'transfers' %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint == 'transfers' %}aria-current="page"{% endif %}>
+                    <i class="fa-solid fa-right-left w-5 text-center" aria-hidden="true"></i> Transfer pipeline
+                </a>
+                <a href="{{ url_for('forecasting') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint == 'forecasting' %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint == 'forecasting' %}aria-current="page"{% endif %}>
+                    <i class="fa-solid fa-chart-line w-5 text-center" aria-hidden="true"></i> Forecasting & waste
+                </a>
+                <a href="{{ url_for('audit') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint == 'audit' %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint == 'audit' %}aria-current="page"{% endif %}>
+                    <i class="fa-solid fa-link w-5 text-center" aria-hidden="true"></i> Audit ledger
+                </a>
             </div>
 
-            <!-- Role Switcher -->
-            <div class="flex items-center space-x-2">
-                <span class="text-slate-400 font-medium">Active Persona:</span>
-                <div class="relative inline-block text-left">
-                    <select onchange="window.location.href='/quick-login/' + this.value" class="bg-slate-800 hover:bg-slate-700 text-teal-300 font-semibold px-2.5 py-1 rounded border border-slate-700 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400 cursor-pointer">
-                        {% for u in g.all_demo_users %}
-                            <option value="{{ u.id }}" {% if g.user and g.user.id == u.id %}selected{% endif %}>
-                                {{ u.full_name }} ({{ u.role }}) - {{ u.facility_name or 'System HQ' }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <p class="mt-8 border-t border-slate-200 px-3 pt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">Tools</p>
+            <div class="mt-3">
+                <a href="{{ url_for('simulation') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint in ('simulation', 'run_simulation') %}bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint in ('simulation', 'run_simulation') %}aria-current="page"{% endif %}>
+                    <i class="fa-solid fa-vial-circle-check w-5 text-center" aria-hidden="true"></i> Demo validation
+                </a>
             </div>
-        </div>
-    </header>
 
-    <!-- Main Navigation Bar -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 group">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20 group-hover:scale-105 transition-transform">
-                            <i class="fa-solid fa-truck-medical text-lg"></i>
-                        </div>
-                        <div>
-                            <div class="text-lg font-bold text-slate-900 leading-tight flex items-center gap-1.5">
-                                <span>MedSupply</span><span class="text-teal-600">Rescue</span>
-                            </div>
-                            <div class="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Facility-to-Facility Coordination</div>
-                        </div>
+            <div class="mt-8 border-t border-slate-200 pt-5">
+                <div class="flex items-center justify-between px-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">My workspaces</p>
+                    <a href="{{ url_for('workspaces') }}" class="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" title="Add workspace" aria-label="Add workspace">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
                     </a>
+                </div>
+                <div class="mt-2 max-h-48 space-y-1 overflow-y-auto">
+                    {% for workspace in g.user_workspaces %}
+                        <a href="{{ url_for('workspace_detail', workspace_id=workspace.id) }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if g.current_workspace_id == workspace.id %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if g.current_workspace_id == workspace.id %}aria-current="page"{% endif %}>
+                            <i class="fa-solid fa-table-cells w-5 text-center" aria-hidden="true"></i>
+                            <span class="truncate">{{ workspace.name }}</span>
+                        </a>
+                    {% else %}
+                        <p class="px-3 py-2 text-sm text-slate-500">No workspaces yet.</p>
+                    {% endfor %}
+                </div>
+                <a href="{{ url_for('workspaces') }}" class="mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-teal-800 hover:bg-teal-50">
+                    <i class="fa-solid fa-gear w-5 text-center" aria-hidden="true"></i> Manage workspaces
+                </a>
+            </div>
+        </nav>
 
-                    <!-- Nav Links -->
-                    <div class="hidden md:ml-8 md:flex md:space-x-1">
-                        <a href="{{ url_for('dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'dashboard' %}bg-teal-50 text-teal-700 font-semibold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-                            <i class="fa-solid fa-chart-pie mr-1.5 text-xs"></i> Dashboard
-                        </a>
-                        <a href="{{ url_for('inventory') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'inventory' %}bg-teal-50 text-teal-700 font-semibold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-                            <i class="fa-solid fa-boxes-stacked mr-1.5 text-xs"></i> Batch Inventory
-                        </a>
-                        <a href="{{ url_for('shortages') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors relative {% if request.endpoint == 'shortages' %}bg-teal-50 text-teal-700 font-semibold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-                            <i class="fa-solid fa-triangle-exclamation mr-1.5 text-xs text-amber-500"></i> Shortages
-                            {% if g.alert_summary.active_shortages|length > 0 %}
-                                <span class="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">{{ g.alert_summary.active_shortages|length }}</span>
-                            {% endif %}
-                        </a>
-                        <a href="{{ url_for('transfers') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'transfers' %}bg-teal-50 text-teal-700 font-semibold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-                            <i class="fa-solid fa-right-left mr-1.5 text-xs"></i> Transfer Pipeline
-                        </a>
-                        <a href="{{ url_for('forecasting') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'forecasting' %}bg-teal-50 text-teal-700 font-semibold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-xs text-purple-600"></i> Forecasting & Waste
-                        </a>
-                        <a href="{{ url_for('audit') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'audit' %}bg-teal-50 text-teal-700 font-semibold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-                            <i class="fa-solid fa-link mr-1.5 text-xs"></i> Audit Ledger
-                        </a>
+        <div class="shrink-0 border-t border-slate-200 px-5 py-4">
+            <p class="text-sm font-medium text-slate-700">Supply coordination portal</p>
+            <p class="mt-1 text-xs text-slate-500">Facility network workspace</p>
+        </div>
+    </aside>
+
+    <div id="appContent" class="flex min-h-screen min-w-0 flex-col lg:pl-64">
+        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+            <div class="mx-auto flex min-h-[72px] max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+                <div class="flex min-w-0 items-center gap-3">
+                    <button id="sidebarToggle" type="button" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 lg:hidden" aria-label="Open navigation menu" aria-controls="appSidebar" aria-expanded="false">
+                        <i class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
+                    </button>
+                    <div class="min-w-0">
+                        <p class="truncate text-base font-semibold text-slate-900">Facility supply network</p>
+                        <p class="hidden text-sm text-slate-500 sm:block">Medicine inventory and transfer coordination</p>
                     </div>
                 </div>
 
-                <!-- Right Side Actions & User Profile -->
-                <div class="flex items-center space-x-3">
-                    <a href="{{ url_for('simulation') }}" class="hidden sm:inline-flex items-center gap-1.5 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-2.5 py-1.5 rounded-lg border border-indigo-200 transition">
-                        <i class="fa-solid fa-vial-circle-check"></i> Demo Validation
-                    </a>
-
-                    <!-- Facility & Role Badge -->
-                    {% if g.user %}
-                        <div class="hidden lg:flex flex-col text-right">
-                            <span class="text-xs font-bold text-slate-800">{{ g.user.full_name }}</span>
-                            <span class="text-[11px] text-slate-500">
-                                {{ g.user.facility_name or 'Regulatory Authority' }} 
-                                <span class="inline-block px-1.5 py-0.2 bg-slate-100 border rounded text-[10px] font-mono text-slate-600">{{ g.user.role }}</span>
-                            </span>
-                        </div>
-                    {% endif %}
-
-                    <a href="{{ url_for('logout') }}" title="Sign Out" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100">
-                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <div class="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+                    <span class="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 md:inline-flex">
+                        <span class="h-2 w-2 rounded-full bg-emerald-600"></span> Network active
+                    </span>
+                    <select aria-label="Active persona" onchange="window.location.href='/quick-login/' + this.value" class="w-40 min-w-0 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:w-56 lg:w-64">
+                        {% for u in g.all_demo_users %}
+                            <option value="{{ u.id }}" {% if g.user and g.user.id == u.id %}selected{% endif %}>
+                                {{ u.full_name }} ({{ u.role }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <a href="{{ url_for('logout') }}" title="Sign out" class="inline-flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
+                        <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                        <span class="hidden sm:inline">Sign out</span>
                     </a>
                 </div>
             </div>
-        </div>
+        </header>
 
-        <!-- Mobile Nav Sub-bar -->
-        <div class="md:hidden border-t border-slate-200 px-4 py-2 flex overflow-x-auto space-x-2 text-xs">
-            <a href="{{ url_for('dashboard') }}" class="whitespace-nowrap px-2.5 py-1.5 rounded bg-slate-100 font-medium">Dashboard</a>
-            <a href="{{ url_for('inventory') }}" class="whitespace-nowrap px-2.5 py-1.5 rounded bg-slate-100 font-medium">Inventory</a>
-            <a href="{{ url_for('shortages') }}" class="whitespace-nowrap px-2.5 py-1.5 rounded bg-slate-100 font-medium">Shortages</a>
-            <a href="{{ url_for('transfers') }}" class="whitespace-nowrap px-2.5 py-1.5 rounded bg-slate-100 font-medium">Transfers</a>
-            <a href="{{ url_for('forecasting') }}" class="whitespace-nowrap px-2.5 py-1.5 rounded bg-slate-100 font-medium">Forecasting</a>
-            <a href="{{ url_for('audit') }}" class="whitespace-nowrap px-2.5 py-1.5 rounded bg-slate-100 font-medium">Audit</a>
-            <a href="{{ url_for('simulation') }}" class="whitespace-nowrap px-2.5 py-1.5 rounded bg-indigo-50 text-indigo-700 font-medium">Demo</a>
-        </div>
-    </nav>
-
-    <!-- Flash Messages Container -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -185,23 +211,14 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer & Regulatory Safety Notice -->
-    <footer class="bg-white border-t border-slate-200 text-slate-500 text-xs py-6 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center space-x-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
-                    <span class="font-bold text-slate-700">MedSupply Rescue</span>
-                    <span>&mdash; Facility Stock Visibility & Traceable Medicine Transfer Prototype</span>
-                </div>
-                <div class="text-center md:text-right text-[11px] text-slate-400 max-w-2xl">
-                    <i class="fa-solid fa-shield-virus text-amber-500 mr-1"></i>
-                    <strong>Safety & Ethics Notice:</strong> This software is an authorized inventory coordination prototype, not a clinical decision or prescribing tool. All inter-facility transfers must comply with applicable state/federal pharmaceutical laws and require sign-off by authorized licensed personnel.
-                </div>
-            </div>
+    <footer class="mt-12 border-t border-slate-200 bg-white py-5 text-sm text-slate-600">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <p><span class="font-semibold text-slate-800">MedSupply Rescue</span> &mdash; Facility Stock Visibility & Traceable Medicine Transfer Prototype</p>
         </div>
     </footer>
+    </div>
 
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

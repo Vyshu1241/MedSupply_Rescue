@@ -4,8 +4,9 @@ Facility-to-Facility Medicine Stock Visibility & Transfer Coordination System
 """
 import os
 import json
+import sqlite3
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, g
+from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, jsonify, g
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from database.db import get_db_connection, init_db
@@ -18,9 +19,53 @@ from services.matching import find_eligible_donors
 from services.forecasting import (
     calculate_facility_forecast, generate_network_redistribution_suggestions
 )
+from services.workspaces import WORKSPACE_VIEWS, get_workspace_view
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'medsupply-rescue-secure-key-2026-production')
+PAGE_SIZE = 10
+
+
+def build_pagination(total_items, endpoint, extra_args=None):
+    page = max(1, request.args.get('page', 1, type=int))
+    total_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = min(page, total_pages)
+
+    query_args = dict(request.args)
+    query_args.pop('page', None)
+    if extra_args:
+        query_args.update(extra_args)
+
+    def page_url(target_page):
+        args = dict(query_args)
+        if target_page > 1:
+            args['page'] = target_page
+        return url_for(endpoint, **args)
+
+    start = ((page - 1) * PAGE_SIZE) + 1 if total_items else 0
+    end = min(page * PAGE_SIZE, total_items)
+
+    window_start = max(1, page - 2)
+    window_end = min(total_pages, page + 2)
+    pages = [
+        {'number': number, 'url': page_url(number), 'current': number == page}
+        for number in range(window_start, window_end + 1)
+    ]
+
+    return {
+        'page': page,
+        'page_size': PAGE_SIZE,
+        'total_items': total_items,
+        'total_pages': total_pages,
+        'start': start,
+        'end': end,
+        'offset': (page - 1) * PAGE_SIZE,
+        'has_prev': page > 1,
+        'has_next': page < total_pages,
+        'prev_url': page_url(page - 1) if page > 1 else None,
+        'next_url': page_url(page + 1) if page < total_pages else None,
+        'pages': pages
+    }
 
 # Ensure DB is initialized upon startup
 with app.app_context():
@@ -53,6 +98,16 @@ def load_logged_in_user():
                FROM users u LEFT JOIN facilities f ON u.facility_id = f.id ORDER BY u.id"""
         ).fetchall()
     ]
+    g.user_workspaces = [
+        dict(row) for row in g.db.execute(
+            """SELECT id, name, view_type
+               FROM saved_workspaces
+               WHERE owner_user_id = ?
+               ORDER BY id""",
+            (g.user['id'],)
+        ).fetchall()
+    ] if g.user else []
+    g.current_workspace_id = (request.view_args or {}).get('workspace_id')
 
     # Global alert badge count
     try:
@@ -230,13 +285,15 @@ def inventory():
     if selected_fac is None and user and user['role'] != 'platform_admin':
         selected_fac = user['facility_id']
 
-    batches = get_facility_inventory(
+    all_batches = get_facility_inventory(
         g.db, 
         facility_id=selected_fac if selected_fac != 0 else None,
         medicine_id=medicine_id,
         category=category,
         storage_req=storage_req
     )
+    pagination = build_pagination(len(all_batches), 'inventory')
+    batches = all_batches[pagination['offset']:pagination['offset'] + PAGE_SIZE]
 
     facilities = [dict(r) for r in g.db.execute("SELECT * FROM facilities ORDER BY name").fetchall()]
     medicines = [dict(r) for r in g.db.execute("SELECT * FROM medicines ORDER BY generic_name").fetchall()]
@@ -250,7 +307,8 @@ def inventory():
         categories=categories,
         selected_fac=selected_fac,
         selected_cat=category,
-        selected_storage=storage_req
+        selected_storage=storage_req,
+        pagination=pagination
     )
 
 @app.route('/inventory/add-batch', methods=['POST'])
@@ -321,7 +379,17 @@ def shortages():
                  CASE s.urgency WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 ELSE 4 END,
                  s.id DESC
     """
-    shortage_list = [dict(r) for r in g.db.execute(query).fetchall()]
+    count_row = g.db.execute(
+        """SELECT count(*) as total
+           FROM shortage_requests s
+           JOIN medicines m ON s.medicine_id = m.id
+           JOIN facilities f ON s.requesting_facility_id = f.id
+           JOIN users u ON s.requested_by_user_id = u.id"""
+    ).fetchone()
+    pagination = build_pagination(count_row['total'], 'shortages')
+    shortage_list = [
+        dict(r) for r in g.db.execute(query + " LIMIT ? OFFSET ?", (PAGE_SIZE, pagination['offset'])).fetchall()
+    ]
 
     # If match_id query parameter is present, pre-run matching engine for that request
     active_match = None
@@ -344,7 +412,8 @@ def shortages():
         active_match=active_match,
         match_candidates=match_candidates,
         medicines=medicines,
-        facilities=facilities
+        facilities=facilities,
+        pagination=pagination
     )
 
 @app.route('/transfers')
@@ -378,8 +447,12 @@ def transfers():
             WHEN 'RECONCILED' THEN 5 
             ELSE 6 END, t.id DESC
     """
-    all_transfers = [dict(r) for r in g.db.execute(query).fetchall()]
-    return render_template('transfers.html', transfers=all_transfers)
+    total = g.db.execute("SELECT count(*) AS total FROM transfer_requests").fetchone()['total']
+    pagination = build_pagination(total, 'transfers')
+    all_transfers = [
+        dict(r) for r in g.db.execute(query + " LIMIT ? OFFSET ?", (PAGE_SIZE, pagination['offset'])).fetchall()
+    ]
+    return render_template('transfers.html', transfers=all_transfers, pagination=pagination)
 
 @app.route('/transfers/create', methods=['POST'])
 def create_transfer():
@@ -455,7 +528,9 @@ def forecasting():
     user = g.user
     selected_fac = request.args.get('facility_id', type=int)
     
-    forecasts = calculate_facility_forecast(g.db, facility_id=selected_fac if selected_fac != 0 else None)
+    all_forecasts = calculate_facility_forecast(g.db, facility_id=selected_fac if selected_fac != 0 else None)
+    pagination = build_pagination(len(all_forecasts), 'forecasting')
+    forecasts = all_forecasts[pagination['offset']:pagination['offset'] + PAGE_SIZE]
     redistribution_suggestions = generate_network_redistribution_suggestions(g.db)
     facilities = [dict(r) for r in g.db.execute("SELECT * FROM facilities ORDER BY name").fetchall()]
 
@@ -470,18 +545,22 @@ def forecasting():
         facilities=facilities,
         selected_fac=selected_fac,
         critical_count=len(critical_stockouts),
-        total_waste_units=total_waste_units
+        total_waste_units=total_waste_units,
+        pagination=pagination
     )
 
 @app.route('/audit')
 def audit():
     verification = verify_ledger_integrity(g.db)
-    
+    total = g.db.execute("SELECT count(*) AS total FROM audit_events").fetchone()['total']
+    pagination = build_pagination(total, 'audit')
+
     events = [dict(r) for r in g.db.execute(
         """SELECT a.*, f.name as facility_name 
            FROM audit_events a
            LEFT JOIN facilities f ON a.facility_id = f.id
-           ORDER BY a.id DESC LIMIT 100"""
+           ORDER BY a.id DESC LIMIT ? OFFSET ?""",
+        (PAGE_SIZE, pagination['offset'])
     ).fetchall()]
 
     for e in events:
@@ -490,12 +569,94 @@ def audit():
         except Exception:
             e['payload_pretty'] = e['payload_json']
 
-    return render_template('audit.html', events=events, verification=verification)
+    return render_template('audit.html', events=events, verification=verification, pagination=pagination)
 
 @app.route('/audit/verify')
 def audit_verify_api():
     verification = verify_ledger_integrity(g.db)
     return jsonify(verification)
+
+@app.route('/workspaces')
+def workspaces():
+    return render_template(
+        'workspaces.html',
+        workspaces=g.user_workspaces,
+        selected_workspace=None,
+        workspace_data=None,
+        pagination=None,
+        workspace_views=WORKSPACE_VIEWS
+    )
+
+@app.route('/workspaces/<int:workspace_id>')
+def workspace_detail(workspace_id):
+    row = g.db.execute(
+        """SELECT id, owner_user_id, name, view_type, created_at
+           FROM saved_workspaces
+           WHERE id = ? AND owner_user_id = ?""",
+        (workspace_id, g.user['id'])
+    ).fetchone()
+    if not row:
+        abort(404)
+
+    selected_workspace = dict(row)
+    workspace_data = get_workspace_view(g.db, row['view_type'], g.user)
+    pagination = build_pagination(
+        len(workspace_data['records']),
+        'workspace_detail',
+        {'workspace_id': workspace_id}
+    )
+    workspace_data['records'] = workspace_data['records'][
+        pagination['offset']:pagination['offset'] + PAGE_SIZE
+    ]
+
+    return render_template(
+        'workspaces.html',
+        workspaces=g.user_workspaces,
+        selected_workspace=selected_workspace,
+        workspace_data=workspace_data,
+        pagination=pagination,
+        workspace_views=WORKSPACE_VIEWS
+    )
+
+@app.route('/workspaces/create', methods=['POST'])
+def create_workspace():
+    name = request.form.get('name', '').strip()
+    view_type = request.form.get('view_type', '')
+
+    if not name or len(name) > 50:
+        flash("Workspace names must be between 1 and 50 characters.", "error")
+        return redirect(url_for('workspaces'))
+    if view_type not in WORKSPACE_VIEWS:
+        flash("Choose a supported workspace view.", "error")
+        return redirect(url_for('workspaces'))
+
+    try:
+        cursor = g.db.execute(
+            """INSERT INTO saved_workspaces (owner_user_id, name, view_type)
+               VALUES (?, ?, ?)""",
+            (g.user['id'], name, view_type)
+        )
+        g.db.commit()
+    except sqlite3.IntegrityError:
+        g.db.rollback()
+        flash("A workspace with that name already exists in your account.", "error")
+        return redirect(url_for('workspaces'))
+
+    flash(f"Workspace '{name}' created.", "success")
+    return redirect(url_for('workspace_detail', workspace_id=cursor.lastrowid))
+
+@app.route('/workspaces/<int:workspace_id>/delete', methods=['POST'])
+def delete_workspace(workspace_id):
+    cursor = g.db.execute(
+        "DELETE FROM saved_workspaces WHERE id = ? AND owner_user_id = ?",
+        (workspace_id, g.user['id'])
+    )
+    if cursor.rowcount != 1:
+        g.db.rollback()
+        abort(404)
+    g.db.commit()
+    flash("Workspace removed. Its source records were not changed.", "info")
+    return redirect(url_for('workspaces'))
 
 @app.route('/simulation')
 def simulation():
