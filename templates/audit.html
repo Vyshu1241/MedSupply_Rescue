@@ -5,107 +5,134 @@
 {% block content %}
 <div class="space-y-6">
 
-    <!-- Header & Verification Banner -->
-    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-6 text-white shadow-xl border border-emerald-500/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <div class="flex items-center gap-2 text-emerald-400 text-sm font-semibold uppercase tracking-wider mb-1">
-                <i class="fa-solid fa-link"></i> Immutable-Style Hash Chain
-            </div>
-            <h1 class="text-2xl font-bold tracking-tight">Regulatory Audit Trail & Provenance Ledger</h1>
-            <p class="text-slate-300 text-sm mt-1 max-w-2xl">
-                Every batch creation, shortage report, authorized sign-off, courier dispatch, and quantity reconciliation is immutably linked via SHA-256 block hashing.
-            </p>
-        </div>
-
-        <div class="bg-emerald-950/70 border border-emerald-500/50 rounded-xl p-4 text-center shrink-0">
-            <div class="flex items-center justify-center gap-2 text-emerald-400 text-sm font-bold uppercase tracking-wider">
-                <i class="fa-solid fa-shield-check text-base"></i> Chain Status
-            </div>
-            <div class="text-xl font-mono font-bold text-white mt-1">{{ verification.status }}</div>
-            <div class="text-xs text-emerald-300 font-mono mt-0.5">{{ verification.count }} Blocks Cryptographically Linked</div>
-        </div>
+    <div class="flex flex-col gap-1">
+        <h1 class="text-xl font-semibold text-slate-900">Audit ledger</h1>
+        <p class="text-sm text-slate-500">A clear record of system activity and integrity.</p>
     </div>
 
-    <!-- Verification Report Details Card -->
-    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div class="space-y-1">
-            <h3 class="text-sm font-bold uppercase text-slate-500">Continuous Integrity Verification</h3>
-            <p class="text-sm font-semibold text-slate-800">
-                {{ verification.message }}
-            </p>
-            <div class="text-sm font-mono text-slate-500 max-w-2xl break-all">
-                Latest Tip Hash: <span class="text-teal-700 font-bold">{{ verification.latest_hash }}</span>
+    <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex items-start gap-3">
+            {% if verification.valid %}
+                <span class="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <i class="fa-solid fa-check text-sm" aria-hidden="true"></i>
+                </span>
+            {% else %}
+                <span class="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-rose-700">
+                    <i class="fa-solid fa-triangle-exclamation text-sm" aria-hidden="true"></i>
+                </span>
+            {% endif %}
+            <div>
+                <p class="text-sm font-semibold text-slate-900">
+                    {% if verification.valid %}Integrity verified{% else %}Integrity check needs attention{% endif %}
+                </p>
+                <p class="mt-0.5 text-xs text-slate-500">{{ verification.message }}</p>
             </div>
         </div>
 
-        <button onclick="window.location.reload()" class="bg-slate-900 hover:bg-slate-800 text-teal-300 font-semibold text-sm px-4 py-2.5 rounded-lg border border-slate-700 transition flex items-center gap-2">
-            <i class="fa-solid fa-arrows-rotate"></i> Re-Calculate All Block Hashes
+        <button onclick="window.location.reload()" class="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Verify again
         </button>
     </div>
 
-    <!-- Audit Events Stream -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" data-paginated-results="audit" aria-live="polite">
-        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 class="text-sm font-bold text-slate-900">Cryptographic Block Stream (Genesis &rarr; Tip)</h3>
-            <span class="text-sm font-mono text-slate-500">Showing {{ pagination.start }}-{{ pagination.end }} of {{ pagination.total_items }} events</span>
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden" data-paginated-results="audit" aria-live="polite">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-1">
+            <h2 class="text-sm font-semibold text-slate-900">Recent activity</h2>
+            <span class="text-xs text-slate-500">Showing {{ pagination.start }}–{{ pagination.end }} of {{ pagination.total_items }}</span>
         </div>
 
         <div class="divide-y divide-slate-100">
             {% for e in events %}
-                <div class="p-4 hover:bg-slate-50/70 transition space-y-2.5">
-                    <!-- Top Row -->
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <article class="px-4 py-3 hover:bg-slate-50/70 transition">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-sm font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded border">
-                                Block #{{ e.id }} &bull; {{ e.event_uuid }}
+                            <span class="text-xs font-medium text-slate-500">#{{ e.id }}</span>
+                            <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-medium
+                                {% if e.action == 'APPROVE' %}bg-amber-50 text-amber-800
+                                {% elif e.action == 'DISPATCH' %}bg-blue-50 text-blue-800
+                                {% elif e.action == 'RECONCILE' %}bg-purple-50 text-purple-800
+                                {% elif e.action == 'CREATE' %}bg-teal-50 text-teal-800
+                                {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                {{ e.entity_type }} · {{ e.action }}
                             </span>
-                            <span class="inline-block text-xs font-bold px-2 py-1 rounded 
-                                {% if e.action == 'APPROVE' %}bg-amber-100 text-amber-800 border border-amber-200
-                                {% elif e.action == 'DISPATCH' %}bg-blue-100 text-blue-800 border border-blue-200
-                                {% elif e.action == 'RECONCILE' %}bg-purple-100 text-purple-800 border border-purple-200
-                                {% elif e.action == 'CREATE' %}bg-teal-100 text-teal-800 border border-teal-200
-                                {% else %}bg-slate-100 text-slate-700 border{% endif %}">
-                                {{ e.entity_type }} &bull; {{ e.action }}
-                            </span>
-                            <span class="text-sm font-bold text-slate-800">Target: {{ e.entity_id }}</span>
+                            <span class="text-sm font-medium text-slate-900">Target {{ e.entity_id }}</span>
                         </div>
 
-                        <div class="text-sm text-slate-500 font-mono">
-                            <i class="fa-solid fa-clock mr-1"></i> {{ e.timestamp }}
+                        <div class="text-xs text-slate-500">
+                            <i class="fa-regular fa-clock mr-1" aria-hidden="true"></i>{{ e.timestamp }}
                         </div>
                     </div>
 
-                    <!-- Actor & Facility Row -->
-                    <div class="text-sm text-slate-600 flex flex-wrap items-center gap-2">
-                        <span>Actor: <strong class="text-slate-800">{{ e.user_name }}</strong> (<span class="font-mono text-xs">{{ e.user_role }}</span>)</span>
-                        <span class="text-slate-300">&bull;</span>
-                        <span>Facility: <strong class="text-slate-800">{{ e.facility_name or 'System HQ' }}</strong></span>
+                    <div class="mt-1 text-xs text-slate-600">
+                        {{ e.user_name }} <span class="text-slate-400">({{ e.user_role }})</span>
+                        <span class="mx-1 text-slate-300">·</span> {{ e.facility_name or 'System HQ' }}
                     </div>
 
-                    <!-- Block Hash Linkage (SHA-256) -->
-                    <div class="bg-slate-900 p-3 rounded-lg text-xs font-mono text-slate-300 space-y-2">
-                        <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-                            <span class="text-slate-400 shrink-0 font-semibold">Previous Hash:</span>
-                            <span class="text-slate-300 break-all">{{ e.previous_hash }}</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-                            <span class="text-emerald-400 shrink-0 font-bold">Current Hash:</span>
-                            <span class="text-emerald-300 font-semibold break-all">{{ e.current_hash }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Payload Details (Collapsible) -->
-                    <details class="text-sm text-slate-600 cursor-pointer">
-                        <summary class="font-semibold text-teal-700 hover:text-teal-800">
-                            <i class="fa-solid fa-code mr-1"></i> View Event Data Payload
+                    <details class="mt-2 text-xs">
+                        <summary class="w-fit cursor-pointer text-teal-700 hover:text-teal-800 font-medium">
+                            View current hash
                         </summary>
-                        <pre class="mt-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs font-mono overflow-x-auto text-slate-800">{{ e.payload_pretty }}</pre>
+                        <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3" data-hash-disclosure data-hash-url="{{ url_for('audit_event_hash', event_id=e.id) }}">
+                            <code class="block break-all font-mono text-slate-700" data-hash-value></code>
+                            <p class="mt-2 text-[11px] text-slate-500">Read-only. Audit records cannot be edited.</p>
+                            <p class="mt-1 text-[11px] text-rose-700 hidden" data-hash-error role="alert">Could not load the current hash. Close and reopen to try again.</p>
+                        </div>
                     </details>
-                </div>
+
+                    {% if e.payload_summary %}
+                        <details class="mt-2 text-xs">
+                            <summary class="w-fit cursor-pointer text-slate-600 hover:text-slate-800 font-medium">
+                                View event details
+                            </summary>
+                            <dl class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                {% for item in e.payload_summary %}
+                                    <div class="flex gap-2">
+                                        <dt class="shrink-0 text-slate-500">{{ item.label }}:</dt>
+                                        <dd class="font-medium text-slate-800 break-words">{{ item.value }}</dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        </details>
+                    {% endif %}
+                </article>
+            {% else %}
+                <p class="px-4 py-8 text-center text-sm text-slate-500">No audit activity has been recorded.</p>
             {% endfor %}
         </div>
         {% include 'pagination.html' %}
     </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll('[data-hash-disclosure]').forEach((disclosure) => {
+        const details = disclosure.closest('details');
+        details.addEventListener('toggle', async () => {
+            if (!details.open || disclosure.dataset.loaded || disclosure.dataset.loading) return;
+
+            disclosure.dataset.loading = 'true';
+            disclosure.setAttribute('aria-busy', 'true');
+            const value = disclosure.querySelector('[data-hash-value]');
+            const error = disclosure.querySelector('[data-hash-error]');
+
+            try {
+                const response = await fetch(disclosure.dataset.hashUrl);
+                if (!response.ok) throw new Error(`Hash request failed: ${response.status}`);
+                const data = await response.json();
+                if (typeof data.current_hash !== 'string' || !data.current_hash) {
+                    throw new Error('Current hash was missing from the response.');
+                }
+                value.textContent = data.current_hash;
+                disclosure.dataset.loaded = 'true';
+            } catch (requestError) {
+                console.error('Unable to load current audit hash:', requestError);
+                error.classList.remove('hidden');
+            } finally {
+                delete disclosure.dataset.loading;
+                disclosure.removeAttribute('aria-busy');
+            }
+        });
+    });
+</script>
 {% endblock %}

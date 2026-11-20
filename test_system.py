@@ -194,6 +194,24 @@ class TestMedSupplyRescue(unittest.TestCase):
             resp = self.client.get(r, follow_redirects=True)
             self.assertEqual(resp.status_code, 200, f"Route {r} failed with status {resp.status_code}")
 
+    def test_audit_hash_is_loaded_only_on_demand_and_is_read_only(self):
+        event = self.conn.execute(
+            "SELECT id, current_hash FROM audit_events ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        page = self.client.get('/audit')
+
+        self.assertEqual(page.status_code, 200)
+        self.assertNotIn(event['current_hash'].encode(), page.data)
+        self.assertNotIn(b'Previous Hash', page.data)
+        self.assertIn(b'Quantity approved', page.data)
+        self.assertNotIn(b'signature_hash', page.data)
+
+        hash_response = self.client.get(f"/audit/{event['id']}/hash")
+        self.assertEqual(hash_response.status_code, 200)
+        self.assertEqual(hash_response.get_json()['current_hash'], event['current_hash'])
+        self.assertEqual(self.client.get('/audit/999999/hash').status_code, 404)
+        self.assertEqual(self.client.post(f"/audit/{event['id']}/hash").status_code, 405)
+
     def test_09_personal_workspaces_are_saved_and_owner_scoped(self):
         """Users can create multiple saved views, but cannot open another user's workspace."""
         self.client.get('/quick-login/3')

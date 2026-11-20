@@ -25,6 +25,61 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'medsupply-rescue-secure-key-2026-production')
 PAGE_SIZE = 10
 
+AUDIT_SUMMARY_FIELDS = {
+    ('APPROVAL', 'APPROVE'): (
+        ('Quantity approved', 'quantity_reserved'),
+        ('Note', 'comments'),
+    ),
+    ('TRANSFER', 'CREATE'): (
+        ('Medicine', 'medicine'),
+        ('Quantity', 'quantity'),
+        ('From', 'source_facility'),
+        ('To', 'dest_facility'),
+    ),
+    ('TRANSFER', 'DISPATCH'): (
+        ('Carrier', 'carrier'),
+        ('Tracking number', 'tracking_number'),
+        ('Quantity sent', 'deducted_quantity'),
+        ('Departure temperature', 'dispatch_temperature'),
+    ),
+    ('TRANSFER', 'RECONCILE'): (
+        ('Quantity received', 'received_quantity'),
+        ('Discrepancy', 'has_discrepancy'),
+        ('Arrival temperature', 'arrival_temperature'),
+        ('Discrepancy note', 'discrepancy_reason'),
+    ),
+    ('SHORTAGE', 'CREATE'): (
+        ('Medicine', 'medicine'),
+        ('Quantity requested', 'quantity'),
+        ('Urgency', 'urgency'),
+    ),
+    ('BATCH', 'CREATE'): (
+        ('Batch', 'batch_number'),
+        ('Quantity added', 'quantity'),
+        ('Expiry date', 'expiry_date'),
+    ),
+    ('FACILITY', 'CREATE'): (
+        ('Facility', 'facility_name'),
+    ),
+}
+
+
+def summarize_audit_payload(event, payload):
+    fields = AUDIT_SUMMARY_FIELDS.get((event['entity_type'], event['action']), ())
+    summary = []
+    for label, key in fields:
+        value = payload.get(key)
+        if value is None or value == '':
+            continue
+        if key == 'discrepancy_reason' and not payload.get('has_discrepancy'):
+            continue
+        if key == 'has_discrepancy':
+            value = 'Yes' if value else 'No'
+        elif key in ('dispatch_temperature', 'arrival_temperature'):
+            value = f'{value} °C'
+        summary.append({'label': label, 'value': value})
+    return summary
+
 
 def build_pagination(total_items, endpoint, extra_args=None):
     page = max(1, request.args.get('page', 1, type=int))
@@ -556,7 +611,8 @@ def audit():
     pagination = build_pagination(total, 'audit')
 
     events = [dict(r) for r in g.db.execute(
-        """SELECT a.*, f.name as facility_name 
+        """SELECT a.id, a.timestamp, a.user_name, a.user_role, a.entity_type,
+                  a.entity_id, a.action, a.payload_json, f.name as facility_name
            FROM audit_events a
            LEFT JOIN facilities f ON a.facility_id = f.id
            ORDER BY a.id DESC LIMIT ? OFFSET ?""",
@@ -564,12 +620,19 @@ def audit():
     ).fetchall()]
 
     for e in events:
-        try:
-            e['payload_pretty'] = json.dumps(json.loads(e['payload_json']), indent=2)
-        except Exception:
-            e['payload_pretty'] = e['payload_json']
+        e['payload_summary'] = summarize_audit_payload(e, json.loads(e['payload_json']))
 
     return render_template('audit.html', events=events, verification=verification, pagination=pagination)
+
+@app.route('/audit/<int:event_id>/hash')
+def audit_event_hash(event_id):
+    event = g.db.execute(
+        "SELECT current_hash FROM audit_events WHERE id = ?",
+        (event_id,)
+    ).fetchone()
+    if not event:
+        return jsonify({"error": "Audit event not found"}), 404
+    return jsonify({"current_hash": event['current_hash']})
 
 @app.route('/audit/verify')
 def audit_verify_api():
