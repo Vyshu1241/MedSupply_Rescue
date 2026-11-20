@@ -114,7 +114,7 @@
 
             <p class="nav-section-label mt-8 border-t border-slate-200 px-3 pt-5">Tools</p>
             <div class="mt-3">
-                <a href="{{ url_for('simulation') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint in ('simulation', 'run_simulation') %}bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint in ('simulation', 'run_simulation') %}aria-current="page"{% endif %}>
+                <a href="{{ url_for('simulation') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint in ('simulation', 'run_simulation') %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint in ('simulation', 'run_simulation') %}aria-current="page"{% endif %}>
                     <i class="fa-solid fa-vial-circle-check w-5 text-center" aria-hidden="true"></i> Demo validation
                 </a>
             </div>

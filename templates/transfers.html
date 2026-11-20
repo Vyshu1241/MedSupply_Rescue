@@ -11,18 +11,12 @@
             <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <i class="fa-solid fa-right-left text-teal-600"></i> Inter-Facility Medicine Transfer Pipeline
             </h1>
-            <p class="text-xs text-slate-500 mt-0.5">
-                Authorized chain-of-custody workflow: Approval &rarr; Dispatch &rarr; Temperature-Verified Transport &rarr; Receipt & Quantity Reconciliation.
-            </p>
-            <p class="mt-2 text-sm text-slate-600">
-                Inventory coordination only, not clinical advice. Transfers require authorized approval and must follow applicable laws and facility policies.
-            </p>
         </div>
 
         <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold text-slate-600">Current Role:</span>
+            <span class="whitespace-nowrap text-xs font-semibold text-slate-600">Current Role:</span>
             <span class="bg-slate-100 text-slate-800 border px-2.5 py-1 rounded-lg text-xs font-mono font-bold">
-                {{ g.user.role }}
+                {{ g.user.role.replace('_', ' ')|title }}
             </span>
         </div>
     </div>
@@ -54,8 +48,8 @@
                                 <i class="fa-solid fa-box text-[10px]"></i> Approved &bull; Ready to Dispatch
                             </span>
                         {% elif t.status == 'DISPATCHED' %}
-                            <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full border border-purple-200 flex items-center gap-1.5">
-                                <i class="fa-solid fa-truck-fast text-[10px]"></i> In Transit (Courier Dispatched)
+                            <span class="bg-teal-50 text-teal-800 text-xs font-bold px-3 py-1 rounded-full border border-teal-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-truck-fast text-[10px]"></i> In transit
                             </span>
                         {% elif t.status == 'RECONCILED' %}
                             <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
@@ -165,7 +159,7 @@
 
                         <!-- If DISPATCHED: Receiving facility can receive & reconcile -->
                         {% if t.status == 'DISPATCHED' %}
-                            <button onclick="document.getElementById('reconcileModal_{{ t.id }}').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                            <button onclick="document.getElementById('reconcileModal_{{ t.id }}').classList.remove('hidden')" class="bg-teal-700 hover:bg-teal-800 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-box-open"></i> Receive & Reconcile
                             </button>
                         {% endif %}
@@ -266,7 +260,7 @@
 
                         <div class="pt-3 border-t flex justify-end gap-2">
                             <button type="button" onclick="document.getElementById('reconcileModal_{{ t.id }}').classList.add('hidden')" class="px-3 py-1.5 bg-slate-100 rounded-lg">Cancel</button>
-                            <button type="submit" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg">Complete Reconciliation</button>
+                            <button type="submit" class="px-4 py-1.5 bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-lg">Complete reconciliation</button>
                         </div>
                     </form>
                 </div>
