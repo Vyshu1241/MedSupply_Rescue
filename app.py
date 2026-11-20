@@ -24,6 +24,7 @@ from services.workspaces import WORKSPACE_VIEWS, get_workspace_view
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'medsupply-rescue-secure-key-2026-production')
 PAGE_SIZE = 10
+INVENTORY_PAGE_SIZE = 7
 
 AUDIT_SUMMARY_FIELDS = {
     ('APPROVAL', 'APPROVE'): (
@@ -81,9 +82,9 @@ def summarize_audit_payload(event, payload):
     return summary
 
 
-def build_pagination(total_items, endpoint, extra_args=None):
+def build_pagination(total_items, endpoint, extra_args=None, page_size=PAGE_SIZE):
     page = max(1, request.args.get('page', 1, type=int))
-    total_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
+    total_pages = max(1, (total_items + page_size - 1) // page_size)
     page = min(page, total_pages)
 
     query_args = dict(request.args)
@@ -97,8 +98,8 @@ def build_pagination(total_items, endpoint, extra_args=None):
             args['page'] = target_page
         return url_for(endpoint, **args)
 
-    start = ((page - 1) * PAGE_SIZE) + 1 if total_items else 0
-    end = min(page * PAGE_SIZE, total_items)
+    start = ((page - 1) * page_size) + 1 if total_items else 0
+    end = min(page * page_size, total_items)
 
     window_start = max(1, page - 2)
     window_end = min(total_pages, page + 2)
@@ -109,12 +110,12 @@ def build_pagination(total_items, endpoint, extra_args=None):
 
     return {
         'page': page,
-        'page_size': PAGE_SIZE,
+        'page_size': page_size,
         'total_items': total_items,
         'total_pages': total_pages,
         'start': start,
         'end': end,
-        'offset': (page - 1) * PAGE_SIZE,
+        'offset': (page - 1) * page_size,
         'has_prev': page > 1,
         'has_next': page < total_pages,
         'prev_url': page_url(page - 1) if page > 1 else None,
@@ -347,8 +348,12 @@ def inventory():
         category=category,
         storage_req=storage_req
     )
-    pagination = build_pagination(len(all_batches), 'inventory')
-    batches = all_batches[pagination['offset']:pagination['offset'] + PAGE_SIZE]
+    pagination = build_pagination(
+        len(all_batches), 'inventory', page_size=INVENTORY_PAGE_SIZE
+    )
+    batches = all_batches[
+        pagination['offset']:pagination['offset'] + pagination['page_size']
+    ]
 
     facilities = [dict(r) for r in g.db.execute("SELECT * FROM facilities ORDER BY name").fetchall()]
     medicines = [dict(r) for r in g.db.execute("SELECT * FROM medicines ORDER BY generic_name").fetchall()]

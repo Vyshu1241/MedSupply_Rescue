@@ -6,7 +6,7 @@
 <div class="space-y-6">
 
     <!-- Top Facility Header & Persona Greeting -->
-    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-2xl p-6 text-white shadow-lg border border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-2xl p-6 text-white shadow-lg border border-slate-700/50 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5">
         <div>
             <div class="flex items-center gap-2 text-teal-400 text-xs font-semibold uppercase tracking-wider mb-1">
                 <i class="fa-solid fa-hospital"></i> {{ g.user.facility_name or 'Regional Authority Hub' }}
@@ -22,21 +22,21 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-2.5">
-            <a href="{{ url_for('shortages') }}" class="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
+        <div class="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:justify-end xl:w-auto">
+            <a href="{{ url_for('shortages') }}" class="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-red-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-red-500 sm:w-auto">
                 <i class="fa-solid fa-plus-circle"></i> Report Shortage
             </a>
-            <a href="{{ url_for('inventory') }}" class="bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl border border-white/20 transition flex items-center gap-2">
+            <a href="{{ url_for('inventory') }}" class="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-white/20 sm:w-auto">
                 <i class="fa-solid fa-box"></i> Register Batch
             </a>
-            <a href="{{ url_for('forecasting') }}" class="bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
+            <a href="{{ url_for('forecasting') }}" class="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-teal-600 px-3.5 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-teal-500 sm:w-auto">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Run Forecast
             </a>
         </div>
     </div>
 
     <!-- KPI Metric Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <!-- 1. Total Active Batches -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
@@ -103,7 +103,7 @@
     <!-- Predictive Rescue Banner: Highlighted Opportunity -->
     {% if alerts.near_expiry|length > 0 %}
         {% set top_near = alerts.near_expiry[0] %}
-        <div class="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/70 border border-amber-300 rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/70 border border-amber-300 rounded-xl p-4 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
             <div class="flex items-start gap-3">
                 <div class="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center text-base mt-0.5 shrink-0 shadow-sm">
                     <i class="fa-solid fa-hand-holding-medical"></i>
@@ -121,17 +121,17 @@
                     </p>
                 </div>
             </div>
-            <a href="{{ url_for('forecasting') }}" class="whitespace-nowrap bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow transition flex items-center gap-1.5 shrink-0">
+            <a href="{{ url_for('forecasting') }}" class="flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-amber-600 px-4 py-2.5 text-xs font-semibold text-white shadow transition hover:bg-amber-700 xl:w-auto">
                 <i class="fa-solid fa-share-nodes"></i> View Redistribution Proposals
             </a>
         </div>
     {% endif %}
 
     <!-- Two-Column Operational Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
         <!-- Left 2 Cols: Shortages & Transfers -->
-        <div class="lg:col-span-2 space-y-6">
+        <div class="space-y-6 xl:col-span-2">
 
             <!-- Active Shortage Requests Table -->
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -146,7 +146,7 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
+                    <table class="w-full min-w-[760px] text-left text-xs">
                         <thead class="bg-slate-50 text-slate-500 border-b border-slate-100 uppercase tracking-wider text-[10px]">
                             <tr>
                                 <th class="py-2.5 px-4">Request Code</th>
@@ -281,21 +281,21 @@
 
                 <div class="space-y-2.5">
                     {% for b in near_expiry_batches %}
-                        <div class="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition flex items-start justify-between">
-                            <div>
+                        <div class="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition grid grid-cols-[minmax(0,1fr)_72px] items-start gap-3">
+                            <div class="min-w-0">
                                 <div class="text-xs font-bold text-slate-900">{{ b.generic_name }}</div>
-                                <div class="text-[11px] text-slate-500">
+                                <div class="text-[11px] text-slate-500 break-words">
                                     {{ b.facility_name }} &bull; Batch: <span class="font-mono">{{ b.batch_number }}</span>
                                 </div>
                                 <div class="text-[11px] font-semibold text-slate-700 mt-1">
                                     Stock: {{ b.current_quantity }} {{ b.unit_of_measure }}
                                 </div>
                             </div>
-                            <div class="text-right">
+                            <div class="w-[72px] shrink-0 text-right">
                                 <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full {{ b.expiry_badge_class }}">
                                     {{ b.days_to_expiry }}d left
                                 </span>
-                                <div class="text-[10px] text-slate-400 mt-1">{{ b.expiry_date }}</div>
+                                <div class="whitespace-nowrap text-[10px] text-slate-400 mt-1">{{ b.expiry_date }}</div>
                             </div>
                         </div>
                     {% else %}

@@ -55,6 +55,13 @@ class TestMedSupplyRescue(unittest.TestCase):
         """Test batch-level tracking, expiry countdown calculation, and low-stock alerts."""
         batches = get_facility_inventory(self.conn)
         self.assertGreater(len(batches), 10, "Should have multiple batches across network")
+        facility_counts = self.conn.execute(
+            "SELECT facility_id, count(*) AS batch_count FROM batches GROUP BY facility_id"
+        ).fetchall()
+        self.assertTrue(
+            all(row['batch_count'] >= 20 for row in facility_counts),
+            "Each demo facility should have at least 20 inventory batches"
+        )
 
         # Check calculated fields
         sample = batches[0]
@@ -68,6 +75,49 @@ class TestMedSupplyRescue(unittest.TestCase):
         self.assertIn('low_stock', alerts)
         self.assertIn('active_shortages', alerts)
         self.assertGreater(len(alerts['near_expiry']), 0, "Should detect near-expiry batches (<=60d)")
+
+    def test_inventory_table_scrolls_and_paginates(self):
+        self.client.get('/quick-login/1')
+        response = self.client.get('/inventory')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Scrollable inventory records', response.data)
+        self.assertIn(b'max-h-[390px] overflow-auto', response.data)
+        total_batches = self.conn.execute(
+            "SELECT count(*) FROM batches"
+        ).fetchone()[0]
+        self.assertIn(f'{total_batches}</strong> records'.encode(), response.data)
+        self.assertIn(b'1-7', response.data)
+        self.assertEqual(
+            response.data.count(b'class="hover:bg-slate-50/80 transition"'),
+            7
+        )
+
+        page_two = self.client.get('/inventory?page=2')
+        self.assertIn(b'8-14', page_two.data)
+
+    def test_seeded_transfer_pipeline_has_actionable_workflow_states(self):
+        statuses = {
+            row['status'] for row in self.conn.execute(
+                "SELECT status FROM transfer_requests"
+            ).fetchall()
+        }
+        self.assertEqual(
+            statuses,
+            {'PENDING_APPROVAL', 'APPROVED', 'DISPATCHED', 'RECONCILED'}
+        )
+        self.assertTrue(verify_ledger_integrity(self.conn)['valid'])
+
+        self.client.get('/quick-login/2')
+        response = self.client.get('/transfers')
+        self.assertEqual(response.status_code, 200)
+        for action in (
+            b'Authorize & Sign Transfer',
+            b'Dispatch Shipment',
+            b'Receive & Reconcile',
+            b'Chain of Custody Completed'
+        ):
+            self.assertIn(action, response.data)
 
     def test_03_intelligent_matching_engine(self):
         """Test intelligent shortage matching prioritizing near-expiry surplus stock."""

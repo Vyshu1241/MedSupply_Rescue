@@ -60,6 +60,7 @@
             }
         }
     </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
@@ -75,18 +76,18 @@
     <button id="sidebarBackdrop" class="fixed inset-0 z-40 hidden bg-slate-950/40 lg:hidden" type="button" aria-label="Close navigation menu"></button>
 
     <aside id="appSidebar" class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 ease-out lg:translate-x-0 lg:shadow-none" aria-label="Main sidebar">
-        <a href="{{ url_for('dashboard') }}" class="flex h-20 shrink-0 items-center gap-3 border-b border-slate-200 px-5">
-            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm">
+        <a href="{{ url_for('dashboard') }}" class="brand-link shrink-0 border-b border-slate-200">
+            <span class="brand-mark flex items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm">
                 <i class="fa-solid fa-truck-medical text-lg" aria-hidden="true"></i>
             </span>
-            <span class="min-w-0">
-                <span class="block text-lg font-bold leading-tight text-slate-900">MedSupply <span class="text-teal-700">Rescue</span></span>
-                <span class="mt-1 block text-xs text-slate-500">Facility coordination</span>
+            <span class="brand-copy min-w-0">
+                <span class="brand-name block">MedSupply <span class="text-teal-700">Rescue</span></span>
+                <span class="brand-caption block">Facility coordination</span>
             </span>
         </a>
 
-        <nav class="flex-1 overflow-y-auto px-3 py-5" aria-label="Primary navigation">
-            <p class="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Workspace</p>
+        <nav class="sidebar-nav flex-1 overflow-y-auto px-3 py-5" aria-label="Primary navigation">
+            <p class="nav-section-label px-3">Workspace</p>
             <div class="mt-3 space-y-1">
                 <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint == 'dashboard' %}bg-teal-50 text-teal-800 ring-1 ring-inset ring-teal-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}>
                     <i class="fa-solid fa-chart-pie w-5 text-center" aria-hidden="true"></i> Dashboard
@@ -111,7 +112,7 @@
                 </a>
             </div>
 
-            <p class="mt-8 border-t border-slate-200 px-3 pt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">Tools</p>
+            <p class="nav-section-label mt-8 border-t border-slate-200 px-3 pt-5">Tools</p>
             <div class="mt-3">
                 <a href="{{ url_for('simulation') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {% if request.endpoint in ('simulation', 'run_simulation') %}bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-200{% else %}text-slate-700 hover:bg-slate-100{% endif %}" {% if request.endpoint in ('simulation', 'run_simulation') %}aria-current="page"{% endif %}>
                     <i class="fa-solid fa-vial-circle-check w-5 text-center" aria-hidden="true"></i> Demo validation
@@ -120,7 +121,7 @@
 
             <div class="mt-8 border-t border-slate-200 pt-5">
                 <div class="flex items-center justify-between px-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">My workspaces</p>
+                    <p class="nav-section-label">My workspaces</p>
                     <a href="{{ url_for('workspaces') }}" class="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" title="Add workspace" aria-label="Add workspace">
                         <i class="fa-solid fa-plus" aria-hidden="true"></i>
                     </a>
@@ -141,37 +142,38 @@
             </div>
         </nav>
 
-        <div class="shrink-0 border-t border-slate-200 px-5 py-4">
+        <div class="sidebar-footer shrink-0 border-t border-slate-200 px-5 py-4">
             <p class="text-sm font-medium text-slate-700">Supply coordination portal</p>
             <p class="mt-1 text-xs text-slate-500">Facility network workspace</p>
         </div>
     </aside>
 
     <div id="appContent" class="flex min-h-screen min-w-0 flex-col lg:pl-64">
-        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-            <div class="mx-auto flex min-h-[72px] max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-                <div class="flex min-w-0 items-center gap-3">
+        <header class="app-topbar sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+            <div class="topbar-inner mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <div class="topbar-brand flex min-w-0 items-center gap-3">
                     <button id="sidebarToggle" type="button" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 lg:hidden" aria-label="Open navigation menu" aria-controls="appSidebar" aria-expanded="false">
                         <i class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
                     </button>
-                    <div class="min-w-0">
-                        <p class="truncate text-base font-semibold text-slate-900">Facility supply network</p>
-                        <p class="hidden text-sm text-slate-500 sm:block">Medicine inventory and transfer coordination</p>
+                    <div class="topbar-title-group min-w-0">
+                        <p class="topbar-title truncate">Facility supply network</p>
+                        <p class="topbar-subtitle hidden sm:block">Medicine inventory and transfer coordination</p>
                     </div>
                 </div>
 
-                <div class="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
-                    <span class="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 md:inline-flex">
+                <div class="topbar-actions flex min-w-0 items-center justify-end gap-2 sm:gap-3">
+                    <span class="network-status hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 xl:inline-flex">
                         <span class="h-2 w-2 rounded-full bg-emerald-600"></span> Network active
                     </span>
-                    <select aria-label="Active persona" onchange="window.location.href='/quick-login/' + this.value" class="w-40 min-w-0 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:w-56 lg:w-64">
+                    <label class="sr-only" for="activePersona">Switch demo account</label>
+                    <select id="activePersona" aria-label="Switch demo account" onchange="window.location.href='/quick-login/' + this.value" class="persona-select min-w-0 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-700 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100">
                         {% for u in g.all_demo_users %}
                             <option value="{{ u.id }}" {% if g.user and g.user.id == u.id %}selected{% endif %}>
-                                {{ u.full_name }} ({{ u.role }})
+                                {{ u.full_name }}
                             </option>
                         {% endfor %}
                     </select>
-                    <a href="{{ url_for('logout') }}" title="Sign out" class="inline-flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
+                    <a href="{{ url_for('logout') }}" title="Sign out" class="sign-out-link inline-flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
                         <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
                         <span class="hidden sm:inline">Sign out</span>
                     </a>
@@ -207,7 +209,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+    <main class="app-main flex-grow min-w-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         {% block content %}{% endblock %}
     </main>
 

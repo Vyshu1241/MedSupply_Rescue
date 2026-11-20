@@ -70,31 +70,35 @@
 
     <!-- Inventory Batches Table -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" data-paginated-results="inventory" aria-live="polite">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+        <p class="px-4 pt-3 text-[11px] text-slate-500">
+            Scroll within the table to review {{ batches|length }} batches on this page.
+        </p>
+        <div class="max-h-[390px] overflow-auto" aria-label="Scrollable inventory records">
+            <table class="w-full min-w-[1100px] table-fixed text-left text-xs">
                 <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
                     <tr>
-                        <th class="py-3 px-4">Medicine & Form</th>
-                        <th class="py-3 px-4">Facility & Storage Location</th>
-                        <th class="py-3 px-4">Batch Number</th>
-                        <th class="py-3 px-4">Stock Breakdown</th>
-                        <th class="py-3 px-4">Expiry Date & Shelf-Life</th>
-                        <th class="py-3 px-4">Storage Compliance</th>
-                        <th class="py-3 px-4 text-right">Actions</th>
+                        <th class="w-[22%] sticky top-0 z-10 bg-slate-50 py-3 px-4">Medicine</th>
+                        <th class="w-[19%] sticky top-0 z-10 bg-slate-50 py-3 px-4">Facility & Location</th>
+                        <th class="w-[12%] sticky top-0 z-10 bg-slate-50 py-3 px-4">Batch</th>
+                        <th class="w-[11%] sticky top-0 z-10 bg-slate-50 py-3 px-4">Available Stock</th>
+                        <th class="w-[14%] sticky top-0 z-10 bg-slate-50 py-3 px-4">Expiry</th>
+                        <th class="w-[13%] sticky top-0 z-10 bg-slate-50 py-3 px-4">Storage</th>
+                        <th class="w-[9%] sticky top-0 z-10 bg-slate-50 py-3 px-4 text-right">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for b in batches %}
                         <tr class="hover:bg-slate-50/80 transition">
                             <!-- Medicine -->
-                            <td class="py-3 px-4">
+                            <td class="py-3 px-4 break-words">
                                 <div class="font-bold text-slate-900 text-xs">{{ b.generic_name }}</div>
-                                <div class="text-[11px] text-slate-500">{{ b.brand_name or '' }} &bull; {{ b.strength }} &bull; {{ b.dosage_form }}</div>
-                                <span class="inline-block mt-0.5 text-[9px] font-mono px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">{{ b.ndc_or_code }}</span>
+                                <div class="text-[11px] text-slate-500">
+                                    {{ b.brand_name or '' }} &bull; {{ b.strength }} &bull; {{ b.dosage_form }}
+                                </div>
                             </td>
 
                             <!-- Facility & Location -->
-                            <td class="py-3 px-4">
+                            <td class="py-3 px-4 break-words">
                                 <div class="font-semibold text-slate-800">{{ b.facility_name }}</div>
                                 <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
                                     <i class="fa-solid fa-location-dot text-[10px] text-teal-600"></i> {{ b.storage_location }}
@@ -102,40 +106,40 @@
                             </td>
 
                             <!-- Batch Number -->
-                            <td class="py-3 px-4 font-mono font-bold text-slate-800">
+                            <td class="py-3 px-4 font-mono text-[10px] font-bold text-slate-800 break-words">
                                 {{ b.batch_number }}
                             </td>
 
                             <!-- Stock Breakdown -->
                             <td class="py-3 px-4">
-                                <div class="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-                                    <span>{{ b.available_quantity }}</span>
+                                <div class="font-bold text-slate-900 whitespace-nowrap">
+                                    {{ b.available_quantity }}
                                     <span class="text-slate-500 font-normal">{{ b.unit_of_measure }}</span>
                                 </div>
                                 {% if b.reserved_quantity > 0 %}
                                     <div class="text-[10px] text-amber-600 font-medium">
-                                        ({{ b.reserved_quantity }} reserved in transfer)
+                                        {{ b.reserved_quantity }} reserved
                                     </div>
                                 {% endif %}
                             </td>
 
                             <!-- Expiry Countdown -->
                             <td class="py-3 px-4">
-                                <div class="font-semibold text-slate-800">{{ b.expiry_date }}</div>
-                                <span class="inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full {{ b.expiry_badge_class }}">
-                                    {{ b.expiry_status }} ({{ b.days_to_expiry }}d)
+                                <div class="font-semibold text-slate-800 whitespace-nowrap">{{ b.expiry_date }}</div>
+                                <span class="inline-block mt-1 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full {{ b.expiry_badge_class }}" aria-label="{{ b.expiry_status }}, {{ b.days_to_expiry }} days remaining">
+                                    {{ b.expiry_status.split(' ')[0] }} &bull; {{ b.days_to_expiry }}d
                                 </span>
                             </td>
 
                             <!-- Storage Requirement -->
                             <td class="py-3 px-4">
                                 {% if 'Cold Chain' in b.storage_requirement or '2-8°C' in b.storage_requirement %}
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                                        <i class="fa-solid fa-snowflake text-[9px]"></i> Cold Chain (2-8°C)
+                                    <span class="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-bold text-sky-800 bg-sky-50 px-2 py-1 rounded border border-sky-200">
+                                        <i class="fa-solid fa-snowflake text-[9px]"></i> Cold chain 2-8°C
                                     </span>
                                 {% else %}
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                                        <i class="fa-solid fa-temperature-half text-[9px]"></i> Room Temp (15-25°C)
+                                    <span class="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                                        <i class="fa-solid fa-temperature-half text-[9px]"></i> Room temp 15-25°C
                                     </span>
                                 {% endif %}
                             </td>
@@ -143,11 +147,11 @@
                             <!-- Actions -->
                             <td class="py-3 px-4 text-right">
                                 {% if b.days_to_expiry <= 60 and b.available_quantity > 0 %}
-                                    <a href="{{ url_for('forecasting') }}" class="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-[10px] px-2 py-1 rounded shadow-sm transition">
-                                        <i class="fa-solid fa-share-nodes"></i> Rescue Stock
+                                    <a href="{{ url_for('forecasting') }}" class="inline-flex items-center gap-1 whitespace-nowrap bg-amber-500 hover:bg-amber-600 text-white font-semibold text-[10px] px-2 py-1 rounded shadow-sm transition" aria-label="Rescue expiring stock">
+                                        <i class="fa-solid fa-share-nodes"></i> Rescue
                                     </a>
                                 {% else %}
-                                    <span class="text-slate-400 text-[11px]">In Stock</span>
+                                    <span class="text-slate-500 text-[11px]">Available</span>
                                 {% endif %}
                             </td>
                         </tr>

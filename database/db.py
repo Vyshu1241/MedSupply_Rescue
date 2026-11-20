@@ -21,6 +21,200 @@ def hash_audit_block(prev_hash, timestamp, entity_type, entity_id, action, paylo
     content = f"{prev_hash}|{timestamp}|{entity_type}|{entity_id}|{action}|{payload_json}"
     return hashlib.sha256(content.encode('utf-8')).hexdigest()
 
+def ensure_demo_inventory(conn):
+    """Keep enough sample batches at each demo facility to exercise inventory paging."""
+    cursor = conn.cursor()
+    if cursor.execute(
+        "SELECT 1 FROM batches WHERE batch_number = 'AMX-2024-012'"
+    ).fetchone() is None:
+        return
+
+    today = datetime.now().date()
+    batches = [
+        (1, 5, "ALB-2026-101", 36, 180, "Respiratory Cabinet A"),
+        (1, 7, "OND-2026-102", 90, 240, "General Pharmacy Shelf 2"),
+        (1, 8, "AZI-2026-103", 48, 210, "Main Pharmacy Bay 2"),
+        (1, 1, "AMX-2026-104", 110, 150, "Main Pharmacy Bay 4 - Bin 15"),
+        (1, 2, "INS-2026-105", 72, 190, "Cold Storage Refrigerator #3 [4.1°C]"),
+        (1, 3, "EPI-2026-106", 32, 270, "Emergency Crash Cart Stock D"),
+        (1, 8, "AZI-2026-107", 54, 300, "Main Pharmacy Bay 3"),
+        (1, 7, "OND-2026-108", 72, 330, "Main Pharmacy Shelf 3"),
+        (1, 1, "AMX-2026-109", 88, 125, "Main Pharmacy Bay 5"),
+        (1, 2, "INS-2026-110", 40, 240, "Cold Storage Refrigerator #4 [3.9°C]"),
+        (1, 4, "CEF-2026-111", 90, 400, "Inpatient Pharmacy Shelf 2A"),
+        (1, 5, "ALB-2026-112", 52, 200, "Respiratory Cabinet B"),
+        (1, 3, "EPI-2026-113", 24, 180, "Emergency Crash Cart Stock E"),
+        (1, 6, "RAB-2026-114", 7, 300, "Cold Storage Refrigerator #5 [4.0°C]"),
+        (1, 8, "AZI-2026-115", 64, 420, "Main Pharmacy Bay 6"),
+
+        (2, 3, "EPI-2026-201", 14, 150, "Emergency Kit Cabinet"),
+        (2, 4, "CEF-2026-202", 44, 220, "Clinic Main Room - Bay 5"),
+        (2, 6, "RAB-2026-203", 8, 170, "Med Refrigerator Unit [3.7°C]"),
+        (2, 8, "AZI-2026-204", 28, 260, "General Supply Room - Shelf 2"),
+        (2, 1, "AMX-2026-205", 1, 200, "Clinic Main Room - Bay 4"),
+        (2, 2, "INS-2026-206", 12, 210, "Med Refrigerator Unit [4.2°C]"),
+        (2, 4, "CEF-2026-207", 32, 320, "Clinic Main Room - Bay 6"),
+        (2, 5, "ALB-2026-208", 26, 230, "Pediatric Cart 3"),
+        (2, 7, "OND-2026-209", 34, 290, "General Supply Room - Shelf 3"),
+        (2, 8, "AZI-2026-210", 20, 330, "General Supply Room - Shelf 4"),
+        (2, 1, "AMX-2026-211", 1, 180, "Clinic Main Room - Bay 7"),
+        (2, 2, "INS-2026-212", 16, 280, "Med Refrigerator Unit [3.8°C]"),
+        (2, 3, "EPI-2026-213", 10, 250, "Emergency Kit Cabinet 2"),
+        (2, 5, "ALB-2026-214", 18, 310, "Pediatric Cart 4"),
+        (2, 4, "CEF-2026-215", 38, 390, "Clinic Main Room - Bay 8"),
+        (2, 1, "AMX-2026-216", 1, 350, "Clinic Main Room - Bay 9"),
+
+        (3, 1, "AMX-2026-301", 18, 190, "Rural Dispensary Cabinet 2"),
+        (3, 4, "CEF-2026-302", 20, 240, "Dispensary Shelf 4"),
+        (3, 5, "ALB-2026-303", 12, 160, "Respiratory Supply Cabinet"),
+        (3, 7, "OND-2026-304", 30, 280, "Dispensary Cabinet 4"),
+        (3, 8, "AZI-2026-305", 22, 200, "Dispensary Cabinet 5"),
+        (3, 3, "EPI-2026-306", 6, 125, "Emergency Kit Cabinet 2"),
+        (3, 4, "CEF-2026-307", 16, 360, "Dispensary Shelf 5"),
+        (3, 5, "ALB-2026-308", 10, 310, "Respiratory Supply Cabinet 2"),
+        (3, 8, "AZI-2026-309", 18, 330, "Dispensary Cabinet 6"),
+        (3, 7, "OND-2026-310", 24, 290, "Dispensary Cabinet 7"),
+        (3, 1, "AMX-2026-311", 14, 180, "Rural Dispensary Cabinet 3"),
+        (3, 4, "CEF-2026-312", 18, 390, "Dispensary Shelf 6"),
+        (3, 5, "ALB-2026-313", 8, 220, "Respiratory Supply Cabinet 3"),
+        (3, 3, "EPI-2026-314", 4, 250, "Emergency Kit Cabinet 3"),
+        (3, 1, "AMX-2026-315", 16, 350, "Rural Dispensary Cabinet 4"),
+        (3, 4, "CEF-2026-316", 12, 420, "Dispensary Shelf 7"),
+        (3, 7, "OND-2026-317", 20, 370, "Dispensary Cabinet 8"),
+
+        (4, 4, "CEF-2026-401", 40, 260, "Urgent Care Pharmacy Shelf 2"),
+        (4, 5, "ALB-2026-402", 24, 190, "Respiratory Cabinet B"),
+        (4, 6, "RAB-2026-403", 10, 210, "Cold Refrigerator [3.9°C]"),
+        (4, 7, "OND-2026-404", 45, 320, "General Supply Room - Shelf 1"),
+        (4, 8, "AZI-2026-405", 30, 240, "Urgent Care Pharmacy Shelf 3"),
+        (4, 1, "AMX-2026-406", 55, 170, "Urgent Care Pharmacy Shelf 4"),
+        (4, 3, "EPI-2026-407", 18, 300, "Resuscitation Suite - Cabinet 2"),
+        (4, 4, "CEF-2026-408", 36, 400, "Urgent Care Pharmacy Shelf 5"),
+        (4, 8, "AZI-2026-409", 26, 330, "Urgent Care Pharmacy Shelf 6"),
+        (4, 7, "OND-2026-410", 36, 290, "General Supply Room - Shelf 2"),
+        (4, 1, "AMX-2026-411", 48, 180, "Urgent Care Pharmacy Shelf 7"),
+        (4, 4, "CEF-2026-412", 30, 390, "Urgent Care Pharmacy Shelf 8"),
+        (4, 2, "INS-2026-413", 22, 280, "Cold Refrigerator #2 [4.0°C]"),
+        (4, 3, "EPI-2026-414", 14, 250, "Resuscitation Suite - Cabinet 3"),
+        (4, 5, "ALB-2026-415", 20, 310, "Respiratory Cabinet C"),
+        (4, 6, "RAB-2026-416", 8, 350, "Cold Refrigerator #3 [3.8°C]"),
+        (4, 8, "AZI-2026-417", 24, 420, "Urgent Care Pharmacy Shelf 9"),
+
+        (5, 1, "AMX-2026-501", 240, 260, "Central Warehouse Bay 4"),
+        (5, 3, "EPI-2026-502", 70, 220, "Emergency Supply Vault"),
+        (5, 5, "ALB-2026-503", 120, 310, "Respiratory Stock Bay 2"),
+        (5, 7, "OND-2026-504", 160, 280, "Central Warehouse Bay 6"),
+        (5, 8, "AZI-2026-505", 100, 350, "Central Warehouse Bay 7"),
+        (5, 2, "INS-2026-506", 220, 320, "Central Cold Vault #4 [3.4°C]"),
+        (5, 4, "CEF-2026-507", 300, 420, "Central Warehouse Bay 10"),
+        (5, 6, "RAB-2026-508", 36, 240, "Central Cold Vault #2 [3.1°C]"),
+        (5, 4, "CEF-2026-509", 260, 390, "Central Warehouse Bay 11"),
+        (5, 2, "INS-2026-510", 180, 280, "Central Cold Vault #5 [3.6°C]"),
+        (5, 1, "AMX-2026-511", 200, 180, "Central Warehouse Bay 12"),
+        (5, 3, "EPI-2026-512", 56, 250, "Emergency Supply Vault 2"),
+        (5, 5, "ALB-2026-513", 90, 310, "Respiratory Stock Bay 3"),
+        (5, 8, "AZI-2026-514", 84, 330, "Central Warehouse Bay 13"),
+        (5, 7, "OND-2026-515", 120, 290, "Central Warehouse Bay 14"),
+        (5, 6, "RAB-2026-516", 28, 350, "Central Cold Vault #6 [3.2°C]"),
+        (5, 4, "CEF-2026-517", 240, 420, "Central Warehouse Bay 15"),
+    ]
+
+    for facility_id, medicine_id, batch_number, quantity, expiry_days, location in batches:
+        if cursor.execute(
+            "SELECT 1 FROM batches WHERE batch_number = ?", (batch_number,)
+        ).fetchone():
+            continue
+        cursor.execute(
+            """INSERT INTO batches (
+                   medicine_id, facility_id, batch_number, initial_quantity,
+                   current_quantity, reserved_quantity, manufacture_date,
+                   expiry_date, storage_location, status
+               ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, 'active')""",
+            (
+                medicine_id, facility_id, batch_number, quantity, quantity,
+                (today - timedelta(days=90)).isoformat(),
+                (today + timedelta(days=expiry_days)).isoformat(), location
+            )
+        )
+
+    for batch_number, previous_quantity in (
+        ("AMX-2026-205", 24),
+        ("AMX-2026-211", 30),
+        ("AMX-2026-216", 22),
+    ):
+        cursor.execute(
+            """UPDATE batches
+               SET initial_quantity = 1, current_quantity = 1
+               WHERE batch_number = ? AND initial_quantity = ?
+                 AND current_quantity = ? AND reserved_quantity = 0""",
+            (batch_number, previous_quantity, previous_quantity)
+        )
+
+def ensure_demo_transfer_pipeline(conn):
+    """Seed each transfer state through the same services used by application actions."""
+    cursor = conn.cursor()
+    if cursor.execute("SELECT 1 FROM transfer_requests LIMIT 1").fetchone():
+        return
+
+    from services.inventory import (
+        create_transfer_request, approve_transfer, dispatch_transfer,
+        receive_and_reconcile_transfer
+    )
+
+    users = {
+        row['id']: dict(row)
+        for row in cursor.execute("SELECT * FROM users").fetchall()
+    }
+
+    def batch_id(batch_number):
+        row = cursor.execute(
+            "SELECT id FROM batches WHERE batch_number = ?", (batch_number,)
+        ).fetchone()
+        if row is None:
+            raise RuntimeError(f"Missing demo batch required for transfer: {batch_number}")
+        return row['id']
+
+    create_transfer_request(
+        conn, 1, 1, 2, 1, batch_id("AMX-2024-081"), 30, users[3]
+    )
+
+    approved_id, _ = create_transfer_request(
+        conn, 2, 1, 3, 3, batch_id("EPI-2024-009"), 10, users[5]
+    )
+    approve_transfer(
+        conn, approved_id, users[4],
+        "Demo approval: authorized for the Valley Hope emergency shortage."
+    )
+
+    dispatched_id, _ = create_transfer_request(
+        conn, None, 1, 4, 4, batch_id("CEF-2024-301"), 16, users[6]
+    )
+    approve_transfer(
+        conn, dispatched_id, users[4],
+        "Demo approval: ambient transport requirements verified."
+    )
+    dispatch_transfer(
+        conn, dispatched_id, users[2], "Regional Medical Courier",
+        "DEMO-CEF-4102", 21.5, "Sealed ambient shipment; temperature monitor attached."
+    )
+
+    reconciled_id, _ = create_transfer_request(
+        conn, None, 1, 4, 7, batch_id("OND-2026-102"), 12, users[6]
+    )
+    approve_transfer(
+        conn, reconciled_id, users[4],
+        "Demo approval: quantity and ambient storage verified."
+    )
+    dispatch_transfer(
+        conn, reconciled_id, users[2], "Regional Medical Courier",
+        "DEMO-OND-4103", 21.2, "Sealed ambient shipment."
+    )
+    receive_and_reconcile_transfer(
+        conn, reconciled_id, users[6], 12, 21.4,
+        "Main Clinic Medication Room - Bay 2",
+        "Demo receipt: all units received and batch details verified."
+    )
+
 def init_db(force_reseed=False):
     db_exists = os.path.exists(DB_PATH)
     conn = get_db_connection()
@@ -47,12 +241,16 @@ def init_db(force_reseed=False):
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_saved_workspaces_owner ON saved_workspaces(owner_user_id, id)"
         )
+        ensure_demo_inventory(conn)
         conn.commit()
 
         # Check if empty
         row = cursor.execute("SELECT count(*) as count FROM facilities").fetchone()
         if row['count'] == 0:
             seed_data(conn)
+        else:
+            ensure_demo_transfer_pipeline(conn)
+            conn.commit()
     
     conn.close()
 
@@ -163,6 +361,7 @@ def seed_data(conn):
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         batches
     )
+    ensure_demo_inventory(conn)
 
     # 5. Historical Consumption (30 days of daily dispense data for forecasting)
     # St. Jude consumes ~3-5 bottles of Amoxicillin/day, but has 185 bottles expiring in 28 days -> Expiry waste risk: ~70 bottles!
@@ -255,6 +454,7 @@ def seed_data(conn):
         (2, "evt-00000002", evt2_time, 2, 3, "Dr. Sarah Chen", "staff", "SHORTAGE", shortage_code, "CREATE", evt2_payload, genesis_hash, evt2_hash)
     )
 
+    ensure_demo_transfer_pipeline(conn)
     conn.commit()
     print("Database initialized and successfully seeded with realistic healthcare scenarios!")
 
