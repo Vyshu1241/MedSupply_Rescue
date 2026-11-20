@@ -132,18 +132,23 @@ def get_facility_inventory(conn, facility_id=None, medicine_id=None, category=No
         if days_to_expiry < 0:
             d['expiry_status'] = 'EXPIRED'
             d['expiry_badge_class'] = 'bg-red-100 text-red-800 border-red-300'
+            d['expiry_text_class'] = 'text-red-800'
         elif days_to_expiry <= 30:
             d['expiry_status'] = 'CRITICAL (<30d)'
             d['expiry_badge_class'] = 'bg-red-600 text-white font-bold'
+            d['expiry_text_class'] = 'text-red-700'
         elif days_to_expiry <= 60:
             d['expiry_status'] = 'WARNING (<60d)'
             d['expiry_badge_class'] = 'bg-amber-100 text-amber-800 border-amber-300'
+            d['expiry_text_class'] = 'text-amber-700'
         elif days_to_expiry <= 90:
             d['expiry_status'] = 'WATCH (<90d)'
             d['expiry_badge_class'] = 'bg-yellow-100 text-yellow-800 border-yellow-300'
+            d['expiry_text_class'] = 'text-yellow-800'
         else:
             d['expiry_status'] = 'STABLE'
             d['expiry_badge_class'] = 'bg-emerald-100 text-emerald-800 border-emerald-300'
+            d['expiry_text_class'] = 'text-emerald-700'
             
         d['available_quantity'] = max(0, d['current_quantity'] - d['reserved_quantity'])
         results.append(d)

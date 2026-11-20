@@ -3,26 +3,54 @@
     const sidebar = document.getElementById('appSidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const appContent = document.getElementById('appContent');
+    const desktopNavigation = window.matchMedia('(min-width: 1024px)');
+
+    function syncSidebarTooltips(collapsed) {
+        if (!sidebar) return;
+        sidebar.querySelectorAll('a[data-sidebar-tooltip]').forEach((link) => {
+            if (collapsed) link.title = link.dataset.sidebarTooltip;
+            else link.removeAttribute('title');
+        });
+    }
 
     function closeSidebar() {
         if (!sidebar || !sidebarBackdrop || !sidebarToggle) return;
-        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('lg:translate-x-0');
+        document.body.classList.add('sidebar-collapsed');
         sidebarBackdrop.classList.add('hidden');
         sidebarBackdrop.classList.remove('block');
         sidebarToggle.setAttribute('aria-expanded', 'false');
+        sidebarToggle.setAttribute('aria-label', 'Expand sidebar');
         document.body.classList.remove('overflow-hidden');
+        syncSidebarTooltips(desktopNavigation.matches);
     }
 
     function openSidebar() {
         if (!sidebar || !sidebarBackdrop || !sidebarToggle) return;
         sidebar.classList.remove('-translate-x-full');
-        sidebarBackdrop.classList.remove('hidden');
-        sidebarBackdrop.classList.add('block');
+        sidebar.classList.add('lg:translate-x-0');
+        if (appContent) appContent.classList.add('lg:pl-64');
+        document.body.classList.remove('sidebar-collapsed');
+        if (desktopNavigation.matches) {
+            sidebarBackdrop.classList.add('hidden');
+            sidebarBackdrop.classList.remove('block');
+            document.body.classList.remove('overflow-hidden');
+        } else {
+            sidebarBackdrop.classList.remove('hidden');
+            sidebarBackdrop.classList.add('block');
+            document.body.classList.add('overflow-hidden');
+        }
         sidebarToggle.setAttribute('aria-expanded', 'true');
-        document.body.classList.add('overflow-hidden');
+        sidebarToggle.setAttribute('aria-label', 'Collapse sidebar');
+        syncSidebarTooltips(false);
     }
 
     if (sidebar && sidebarToggle && sidebarBackdrop) {
+        if (desktopNavigation.matches) openSidebar();
+        else closeSidebar();
+
         sidebarToggle.addEventListener('click', () => {
             if (sidebarToggle.getAttribute('aria-expanded') === 'true') {
                 closeSidebar();
@@ -31,16 +59,19 @@
             }
         });
         sidebarBackdrop.addEventListener('click', closeSidebar);
-        sidebar.querySelectorAll('nav a').forEach((link) => {
+        sidebar.querySelectorAll('a').forEach((link) => {
             link.addEventListener('click', () => {
                 if (window.matchMedia('(max-width: 1023px)').matches) closeSidebar();
             });
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') closeSidebar();
+            if (event.key === 'Escape' && sidebarToggle.getAttribute('aria-expanded') === 'true') {
+                closeSidebar();
+            }
         });
         window.addEventListener('resize', () => {
-            if (window.matchMedia('(min-width: 1024px)').matches) closeSidebar();
+            if (desktopNavigation.matches) openSidebar();
+            else closeSidebar();
         });
     }
 

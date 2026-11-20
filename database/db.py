@@ -150,6 +150,96 @@ def ensure_demo_inventory(conn):
             (batch_number, previous_quantity, previous_quantity)
         )
 
+def ensure_demo_shortage_requests(conn):
+    """Keep at least 25 demo shortage requests available for the coordination queue."""
+    cursor = conn.cursor()
+    request_count = cursor.execute(
+        "SELECT count(*) AS count FROM shortage_requests"
+    ).fetchone()['count']
+    if request_count >= 25:
+        return
+
+    from services.inventory import log_audit_event
+
+    users = {
+        row['id']: dict(row)
+        for row in cursor.execute(
+            "SELECT id, full_name, role FROM users"
+        ).fetchall()
+    }
+    used_codes = {
+        row['request_code']
+        for row in cursor.execute(
+            "SELECT request_code FROM shortage_requests"
+        ).fetchall()
+    }
+    reasons = [
+        "Seasonal demand has exceeded the forecast. Current stock is unlikely to cover the facility's needs before the next wholesaler delivery.",
+        "The primary wholesaler delayed the shipment. Available inventory is below the facility's safety buffer and replacement stock is not expected this week.",
+        "Recent utilization exceeded the normal weekly supply. The next replenishment is scheduled after the clinic's projected stockout date.",
+        "An increase in outpatient demand reduced the on-hand reserve. The supplier cannot deliver before the next scheduled order window.",
+        "The latest order was short-shipped. Available quantities do not cover expected use through the delayed delivery date.",
+        "A distribution delay extended the normal lead time. Current stock will not sustain expected use until the replacement order arrives.",
+    ]
+    demo_requests = [
+        (2, 3, 5, 18, "MEDIUM", 6),
+        (4, 6, 2, 14, "HIGH", 3),
+        (3, 5, 8, 24, "MEDIUM", 5),
+        (1, 2, 7, 30, "LOW", 10),
+        (2, 3, 6, 8, "HIGH", 3),
+        (4, 6, 1, 25, "MEDIUM", 5),
+        (3, 5, 4, 16, "HIGH", 2),
+        (1, 2, 3, 12, "MEDIUM", 6),
+        (2, 3, 8, 22, "LOW", 9),
+        (4, 6, 5, 20, "MEDIUM", 5),
+        (3, 5, 1, 18, "MEDIUM", 6),
+        (1, 2, 2, 10, "HIGH", 2),
+        (2, 3, 7, 26, "LOW", 10),
+        (4, 6, 4, 32, "MEDIUM", 4),
+        (3, 5, 5, 12, "MEDIUM", 7),
+        (1, 2, 6, 6, "HIGH", 3),
+        (2, 3, 3, 10, "MEDIUM", 6),
+        (4, 6, 8, 22, "LOW", 11),
+        (3, 5, 7, 18, "MEDIUM", 5),
+        (1, 2, 5, 16, "HIGH", 2),
+        (2, 3, 4, 20, "MEDIUM", 6),
+        (4, 6, 2, 18, "MEDIUM", 6),
+        (3, 5, 8, 14, "LOW", 12),
+        (1, 2, 3, 16, "MEDIUM", 7),
+        (2, 3, 6, 4, "HIGH", 2),
+    ]
+
+    now = datetime.now()
+    today = now.date()
+    next_code_number = 3
+    for index, (facility_id, user_id, medicine_id, quantity, urgency, days_needed) in enumerate(demo_requests):
+        if request_count >= 25:
+            break
+        while f"SR-2024-{next_code_number:03d}" in used_codes:
+            next_code_number += 1
+        request_code = f"SR-2024-{next_code_number:03d}"
+        next_code_number += 1
+        user = users[user_id]
+        justification = reasons[index % len(reasons)]
+        created_at = (now - timedelta(days=index % 10 + 1)).isoformat()
+        cursor.execute(
+            """INSERT INTO shortage_requests
+               (request_code, requesting_facility_id, requested_by_user_id, medicine_id,
+                required_quantity, urgency, clinical_justification, status, needed_by_date, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)""",
+            (
+                request_code, facility_id, user_id, medicine_id, quantity, urgency,
+                justification, (today + timedelta(days=days_needed)).isoformat(), created_at
+            )
+        )
+        log_audit_event(
+            conn, facility_id, user_id, user['full_name'], user['role'],
+            "SHORTAGE", request_code, "CREATE",
+            {"medicine_id": medicine_id, "quantity": quantity, "urgency": urgency}
+        )
+        used_codes.add(request_code)
+        request_count += 1
+
 def ensure_demo_transfer_pipeline(conn):
     """Seed each transfer state through the same services used by application actions."""
     cursor = conn.cursor()
@@ -249,6 +339,7 @@ def init_db(force_reseed=False):
         if row['count'] == 0:
             seed_data(conn)
         else:
+            ensure_demo_shortage_requests(conn)
             ensure_demo_transfer_pipeline(conn)
             conn.commit()
     
@@ -454,6 +545,7 @@ def seed_data(conn):
         (2, "evt-00000002", evt2_time, 2, 3, "Dr. Sarah Chen", "staff", "SHORTAGE", shortage_code, "CREATE", evt2_payload, genesis_hash, evt2_hash)
     )
 
+    ensure_demo_shortage_requests(conn)
     ensure_demo_transfer_pipeline(conn)
     conn.commit()
     print("Database initialized and successfully seeded with realistic healthcare scenarios!")

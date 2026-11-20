@@ -11,14 +11,59 @@ body {
 
 #appContent {
     min-width: 0;
+    transition: padding-left 200ms ease;
+}
+
+.app-sidebar {
+    transition: width 200ms ease, transform 200ms ease;
+}
+
+body.sidebar-collapsed #appSidebar {
+    width: 4.5rem;
+}
+
+body.sidebar-collapsed #appContent {
+    padding-left: 4.5rem;
+}
+
+body.sidebar-collapsed #appSidebar .brand-link {
+    justify-content: center;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+body.sidebar-collapsed #appSidebar .brand-copy,
+body.sidebar-collapsed #appSidebar .sidebar-section-label,
+body.sidebar-collapsed #appSidebar .sidebar-item-label,
+body.sidebar-collapsed #appSidebar .sidebar-item-badge,
+body.sidebar-collapsed #appSidebar .sidebar-empty-state,
+body.sidebar-collapsed #appSidebar .sidebar-footer {
+    display: none;
+}
+
+body.sidebar-collapsed #appSidebar nav a {
+    justify-content: center;
+    gap: 0;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+body.sidebar-collapsed #appSidebar .sidebar-link-content {
+    justify-content: center;
 }
 
 .brand-link {
     display: flex;
+    width: 100%;
     height: 76px;
     align-items: center;
     gap: 12px;
     padding: 0 20px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
 }
 
 .brand-mark {
@@ -135,7 +180,7 @@ body {
 }
 
 [class~="text-[9px]"]:not(i) {
-    font-size: 0.6875rem !important;
+    font-size: 0.75rem !important;
 }
 
 [class~="text-[10px]"]:not(i) {
@@ -143,63 +188,56 @@ body {
 }
 
 [class~="text-[11px]"]:not(i) {
-    font-size: 0.8125rem !important;
+    font-size: 0.75rem !important;
 }
 
-[class~="text-xs"]:not(i) {
-    font-size: 0.875rem !important;
+.clinical-justification summary {
+    cursor: pointer;
+    list-style: none;
 }
 
-[class~="text-sm"]:not(i) {
-    font-size: 0.9375rem !important;
+.clinical-justification summary::-webkit-details-marker {
+    display: none;
 }
 
-[class~="text-base"]:not(i) {
-    font-size: 1.0625rem !important;
+.clinical-justification summary:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid #2e7d5c;
+    outline-offset: 2px;
 }
 
-[class~="text-lg"]:not(i) {
-    font-size: 1.25rem !important;
+.clinical-justification-preview {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
-[class~="text-xl"]:not(i) {
-    font-size: 1.375rem !important;
+.clinical-justification-more,
+.clinical-justification-less {
+    display: block;
+    margin-top: 4px;
+    color: #256849;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
-[class~="text-2xl"]:not(i) {
-    font-size: 1.625rem !important;
+.clinical-justification-less {
+    display: none;
 }
 
-[class~="text-3xl"]:not(i) {
-    font-size: 2rem !important;
+.clinical-justification[open] .clinical-justification-preview,
+.clinical-justification[open] .clinical-justification-more {
+    display: none;
 }
 
-[class~="text-4xl"]:not(i) {
-    font-size: 2.375rem !important;
+.clinical-justification[open] .clinical-justification-less {
+    display: block;
 }
 
-[class~="text-[9px]"]:not(i):not([class*="leading-"]) {
-    line-height: 1rem !important;
-}
-
-[class~="text-[10px]"]:not(i):not([class*="leading-"]) {
-    line-height: 1.05rem !important;
-}
-
-[class~="text-[11px]"]:not(i):not([class*="leading-"]) {
-    line-height: 1.15rem !important;
-}
-
-[class~="text-xs"]:not(i):not([class*="leading-"]) {
-    line-height: 1.25rem !important;
-}
-
-[class~="text-sm"]:not(i):not([class*="leading-"]) {
-    line-height: 1.4rem !important;
-}
-
-[class~="text-base"]:not(i):not([class*="leading-"]) {
-    line-height: 1.5rem !important;
+.clinical-justification-full {
+    margin-top: 4px;
 }
 
 @media (max-width: 1023px) {

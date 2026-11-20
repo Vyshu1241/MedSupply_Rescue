@@ -68,6 +68,7 @@ class TestMedSupplyRescue(unittest.TestCase):
         self.assertIn('days_to_expiry', sample)
         self.assertIn('available_quantity', sample)
         self.assertIn('expiry_badge_class', sample)
+        self.assertIn('expiry_text_class', sample)
 
         # Alerts calculation
         alerts = get_alerts(self.conn)
@@ -81,6 +82,8 @@ class TestMedSupplyRescue(unittest.TestCase):
         response = self.client.get('/inventory')
 
         self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Expiry status legend', response.data)
+        self.assertIn(b'critical (30 days or less) or expired', response.data)
         self.assertIn(b'Scrollable inventory records', response.data)
         self.assertIn(b'max-h-[390px] overflow-auto', response.data)
         total_batches = self.conn.execute(
@@ -118,6 +121,27 @@ class TestMedSupplyRescue(unittest.TestCase):
             b'Chain of Custody Completed'
         ):
             self.assertIn(action, response.data)
+
+    def test_seeded_shortage_queue_minimum_and_expandable_justifications(self):
+        request_count = self.conn.execute(
+            "SELECT count(*) FROM shortage_requests"
+        ).fetchone()[0]
+        self.assertGreaterEqual(request_count, 25)
+
+        response = self.client.get('/shortages')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(f'>{request_count}</strong> records'.encode(), response.data)
+        self.assertIn(b'<details class="clinical-justification">', response.data)
+        self.assertIn(b'View more', response.data)
+        self.assertIn(b'max-h-[600px] overflow-auto', response.data)
+        self.assertIn(b'sticky top-0 z-10', response.data)
+        self.assertTrue(verify_ledger_integrity(self.conn)['valid'])
+
+        init_db()
+        self.assertEqual(
+            self.conn.execute("SELECT count(*) FROM shortage_requests").fetchone()[0],
+            request_count
+        )
 
     def test_03_intelligent_matching_engine(self):
         """Test intelligent shortage matching prioritizing near-expiry surplus stock."""

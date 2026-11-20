@@ -104,17 +104,17 @@
 
     <!-- All Shortage Requests Table -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" data-paginated-results="shortages" aria-live="polite">
-        <div class="overflow-x-auto">
+        <div class="max-h-[600px] overflow-auto">
             <table class="w-full min-w-[900px] text-left text-xs">
                 <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
                     <tr>
-                        <th class="py-3 px-4">Request Code</th>
-                        <th class="py-3 px-4">Requesting Clinic</th>
-                        <th class="py-3 px-4">Medicine & Demand</th>
-                        <th class="py-3 px-4">Urgency & Timeline</th>
-                        <th class="py-3 px-4">Clinical Justification</th>
-                        <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4 text-right">Actions</th>
+                        <th class="sticky top-0 z-10 bg-slate-50 py-3 px-4">Request Code</th>
+                        <th class="sticky top-0 z-10 bg-slate-50 py-3 px-4">Requesting Clinic</th>
+                        <th class="sticky top-0 z-10 bg-slate-50 py-3 px-4">Medicine & Demand</th>
+                        <th class="sticky top-0 z-10 bg-slate-50 py-3 px-4">Urgency & Timeline</th>
+                        <th class="sticky top-0 z-10 bg-slate-50 py-3 px-4">Clinical Justification</th>
+                        <th class="sticky top-0 z-10 bg-slate-50 py-3 px-4">Status</th>
+                        <th class="sticky top-0 z-10 bg-slate-50 py-3 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -125,11 +125,13 @@
                             </td>
                             <td class="py-3 px-4">
                                 <div class="font-semibold text-slate-800">{{ s.facility_name }}</div>
-                                <div class="text-[11px] text-slate-500">{{ s.city }} &bull; By {{ s.requester_name }}</div>
+                                <div class="mt-0.5 text-xs text-slate-500">{{ s.city }}</div>
+                                <div class="text-xs text-slate-500">By {{ s.requester_name }}</div>
                             </td>
                             <td class="py-3 px-4">
-                                <div class="font-bold text-slate-900">{{ s.generic_name }}</div>
-                                <div class="text-[11px] text-slate-500">{{ s.strength }} &bull; Need: <strong class="text-rose-600">{{ s.required_quantity }} {{ s.unit_of_measure }}</strong></div>
+                                <div class="font-semibold text-slate-900">{{ s.generic_name }}</div>
+                                <div class="mt-0.5 text-xs text-slate-500">{{ s.strength }}</div>
+                                <div class="mt-1 text-xs text-slate-500">Need: <strong class="font-medium text-rose-700">{{ s.required_quantity }} {{ s.unit_of_measure }}</strong></div>
                             </td>
                             <td class="py-3 px-4">
                                 <div>
@@ -147,10 +149,22 @@
                                         </span>
                                     {% endif %}
                                 </div>
-                                <div class="text-[11px] text-slate-500 mt-1">Needed by: {{ s.needed_by_date }}</div>
+                                <div class="mt-1 text-xs text-slate-500">Needed by:</div>
+                                <div class="whitespace-nowrap text-xs text-slate-700">{{ s.needed_by_date }}</div>
                             </td>
                             <td class="py-3 px-4 max-w-xs text-slate-600 text-[11px] leading-relaxed">
-                                {{ s.clinical_justification }}
+                                {% if s.clinical_justification|length > 110 %}
+                                    <details class="clinical-justification">
+                                        <summary>
+                                            <span class="clinical-justification-preview">{{ s.clinical_justification }}</span>
+                                            <span class="clinical-justification-more">View more</span>
+                                            <span class="clinical-justification-less">View less</span>
+                                        </summary>
+                                        <p class="clinical-justification-full">{{ s.clinical_justification }}</p>
+                                    </details>
+                                {% else %}
+                                    {{ s.clinical_justification }}
+                                {% endif %}
                             </td>
                             <td class="py-3 px-4">
                                 {% if s.status == 'OPEN' %}
@@ -167,8 +181,8 @@
                             </td>
                             <td class="py-3 px-4 text-right">
                                 {% if s.status in ('OPEN', 'MATCHED') %}
-                                    <a href="{{ url_for('shortages', match_id=s.id) }}" class="inline-flex items-center gap-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[11px] px-3 py-1.5 rounded-lg shadow-sm transition">
-                                        <i class="fa-solid fa-bolt text-[10px]"></i> Smart Match
+                                    <a href="{{ url_for('shortages', match_id=s.id) }}" class="inline-flex items-center whitespace-nowrap rounded-md bg-teal-700 px-1.5 py-1.5 text-xs font-medium text-white transition hover:bg-teal-800">
+                                        Smart Match
                                     </a>
                                 {% else %}
                                     <span class="text-slate-400 text-[11px]">Fulfilled</span>

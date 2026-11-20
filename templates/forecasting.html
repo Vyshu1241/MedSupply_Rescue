@@ -131,16 +131,17 @@
                             </td>
                             <td class="py-3 px-3">
                                 {% if f.risk_level == 'CRITICAL' %}
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-red-100 text-red-800 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-200">
-                                        <i class="fa-solid fa-triangle-exclamation"></i> {{ f.stockout_status }}
+                                    <span class="inline-flex max-w-[90px] items-center gap-1 whitespace-normal break-words bg-red-100 text-red-800 text-[9px] font-bold px-2 py-1 leading-tight rounded-full border border-red-200">
+                                        <i class="fa-solid fa-triangle-exclamation shrink-0"></i>
+                                        <span class="min-w-0 break-words">{{ f.stockout_status|replace('_', ' ')|title }}</span>
                                     </span>
                                 {% elif f.risk_level == 'WARNING' %}
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-amber-200">
-                                        {{ f.stockout_status }}
+                                    <span class="inline-flex max-w-[90px] items-center gap-1 whitespace-normal break-words bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-1 leading-tight rounded-full border border-amber-200">
+                                        <span class="min-w-0 break-words">{{ f.stockout_status|replace('_', ' ')|title }}</span>
                                     </span>
                                 {% else %}
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-emerald-100 text-emerald-800 text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
-                                        {{ f.stockout_status }}
+                                    <span class="inline-flex max-w-[90px] items-center gap-1 whitespace-normal break-words bg-emerald-100 text-emerald-800 text-[9px] font-semibold px-2 py-1 leading-tight rounded-full">
+                                        <span class="min-w-0 break-words">{{ f.stockout_status|replace('_', ' ')|title }}</span>
                                     </span>
                                 {% endif %}
                             </td>
