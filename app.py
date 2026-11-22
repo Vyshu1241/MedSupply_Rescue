@@ -373,6 +373,10 @@ def inventory():
 
 @app.route('/inventory/add-batch', methods=['POST'])
 def add_new_batch():
+    if g.user['role'] not in ('facility_manager', 'platform_admin'):
+        flash("Unauthorized: Only Pharmacy Facility Managers or Administrators may register new batches.", "error")
+        return redirect(url_for('inventory'))
+    
     try:
         facility_id = int(request.form.get('facility_id'))
         medicine_id = int(request.form.get('medicine_id'))
