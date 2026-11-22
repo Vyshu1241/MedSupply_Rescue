@@ -523,6 +523,9 @@ def transfers():
 
 @app.route('/transfers/create', methods=['POST'])
 def create_transfer():
+    if g.user['role'] not in ('staff', 'facility_manager', 'platform_admin'):
+        flash("Unauthorized: Regulatory Approvers cannot initiate transfer requests.", "error")
+        return redirect(url_for('shortages'))
     try:
         shortage_id = request.form.get('shortage_id', type=int)
         batch_id = int(request.form.get('batch_id'))
