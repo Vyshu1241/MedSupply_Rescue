@@ -399,6 +399,9 @@ def add_new_batch():
 @app.route('/shortages', methods=['GET', 'POST'])
 def shortages():
     if request.method == 'POST':
+               if g.user['role'] not in ('staff', 'facility_manager', 'platform_admin'):
+            flash("Unauthorized: Regulatory Approvers cannot file clinical shortage requests.", "error")
+            return redirect(url_for('shortages'))
         try:
             req_fac_id = g.user['facility_id'] if g.user and g.user['facility_id'] else int(request.form.get('facility_id'))
             medicine_id = int(request.form.get('medicine_id'))
